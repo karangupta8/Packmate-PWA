@@ -1,221 +1,122 @@
-# Packmate-PWA
-PWA to catalog your belongings with images &amp; metadata. Create virtual bags for trips to plan, pack, track, and return with ease
+# Packmate PWA
 
+**Your smart packing assistant. Catalog your belongings, create virtual bags for trips, and never forget an item again.**
 
-## **Origin**
+---
 
-- **Initial Concept (7-8 years ago):**
-    
-    A progressive web app that catalogs everything you own (clothes, shoes, accessories, gadgets, toiletries, etc.) with images and metadata. You can then “add” items to a virtual bag/folder for a specific trip—helping with packing before you leave, during the trip, and when returning.
-    
-- Idea Date: 2018/2019
+## 🔍 Overview
 
-- **Why I Couldn't Build It Then:**
-    
-    I lacked full-stack app development skills at the time. However, with advancements in no-code tools like **Lovable and Bolt**, the concept is now achievable.
-    
+Packmate is an offline-first Progressive Web App (PWA) designed to eliminate the stress of packing for travel. It allows you to create a digital catalog of your belongings, plan your trips with detailed packing lists, and ensure you bring everything back home.
 
-### **Refined Idea Prompt - For Bolt using GPT**
+- **For meticulous travelers:** Built for anyone who loves to plan and wants to avoid the "Did I pack that?" anxiety.
+- **Digital Inventory:** Catalog everything you own—clothes, electronics, toiletries—with images, categories, and tags.
+- **Visual Trip Planning:** Add items from your catalog to virtual bags and create occasion-based outfits for your trips.
+- **Offline-First & Private:** Works entirely offline. All data is stored locally in your browser via IndexedDB, ensuring your information remains private and accessible without an internet connection.
+- **Installable:** As a PWA, Packmate can be installed on your mobile device or desktop for a native-app experience.
 
-I want to build a Progressive Web App (PWA) called **PackMate**. The purpose of this app is to help travelers plan their packing in advance, keep track of what they’ve packed, and make sure nothing is left behind when returning from a trip. It works by storing a personal catalog of clothes, accessories, and travel items, and letting the user organize them into trip folders.
+## 🧩 Problem, Solution & Impact
 
-Each wardrobe item should have an image, a name, a category, and optional tags. Items are stored locally using IndexedDB or LocalStorage, and images can be stored as base64 or blobs. An item can also be marked as an “essential” with a simple tag.
+- **Problem Solved** → The recurring stress of packing: forgetting essential items, overpacking, and leaving things behind in a hotel room. The mental load of tracking what's packed and what's needed for different occasions is significant.
+- **How It Solves It** → Packmate provides a systematic, digital-first approach. By creating a personal inventory, users can visually plan their packing lists. Features like bag assignment, outfit planning, and a dedicated "repacking" mode transform a chaotic process into a structured, stress-free activity.
+- **Impact Created** → Users gain peace of mind, save time, and avoid the cost and inconvenience of replacing forgotten items. It promotes more intentional packing, potentially reducing overpacking and making travel smoother.
 
-Users can create trip folders, for example “Paris Trip Aug 2025,” and add wardrobe items into that folder. Trip folders should support saving and reusing as templates. Each trip folder has two modes: Packing Mode and Return Mode. In Packing Mode, the user can check off items as they pack. In Return Mode, the user can check items again when repacking to make sure nothing is left behind. The state of these checklists must be saved locally so that progress is not lost.
+---
 
-The app must be installable on mobile and desktop as a PWA. It must work fully offline. Service workers should be included for offline support. Wardrobe and trip data should also be exportable as JSON for backup and future migration. The data layer should be designed in a way that later can be extended to sync with a backend like Supabase, Firebase, or a custom Node.js API.
+## 📑 Table of Contents
 
-The user interface should be mobile-first and clean. The wardrobe should be displayed as a grid of items with filters. Trip folders should be shown in a cart-style view with a checklist toggle. A trip dashboard should show all trips and allow quick access.
+- [✨ Features](#-features)
+- [🌱 Origin](#-origin)
+- [⚡ Quick Start](#-quick-start)
+- [🧭 Architecture](#-architecture)
+- [🛣️ Future Roadmap](#️-future-roadmap--potential-features)
+- [🔗 Comparable Projects](#-comparable-projects)
+- [🧑‍🎓 Target Users & Use Cases](#-target-users--use-cases)
+- [📂 Folder Structure](#-folder-structure)
+- [🛠 Built With](#-built-with)
+- [⚙️ Installation & Setup](#️-installation--setup)
+- [🚀 Deployment](#-deployment)
+- [💡 The Prompt That Started It All](#-the-prompt-that-started-it-all)
+- [📜 License](#-license)
 
-Use React (or Next.js if supported). Use IndexedDB for storage (you can use a wrapper like idb if needed).
+---
 
-> Build me a Progressive Web App (PWA) called “PackMate” with the following MVP features:
-> 
-> 
-> ### Core Features (MVP)
-> 
-> 1. **Wardrobe and Stuff Catalog**
-> - Add new items with image, name, category, and tags.
-> - Store images and metadata locally (IndexedDB or LocalStorage).
-> - Option to mark “essentials” (just a checkbox/tag).
-> 1. **Trip Folders**
-> - Create trip folders (e.g., “Paris Trip – Aug 2025”).
-> - Add wardrobe items into a trip folder (like “add to cart”).
-> - Save and reuse trip folders as templates.
-> 1. **Packing & Unpacking Checklist**
-> - Each trip folder has two modes:
->     - **Packing Mode**: Tick items as packed.
->     - **Return Mode**: Tick items again when re-packing.
-> - Checklist state stored locally so progress is saved.
-> 
-> ### PWA Requirements
-> 
-> - Installable on mobile and desktop (Add to Home Screen).
-> - Works fully offline.
-> - Use **IndexedDB/LocalStorage** for all data in MVP.
-> - Export wardrobe/trip data as JSON for backup or migration.
-> 
-> ### Future-Proofing (Not for MVP, but plan structure)
-> 
-> - Design the data layer so it can later sync with a backend (Supabase, Firebase, or Node.js API).
-> - Keep interfaces modular: local DB now, cloud DB adapter later.
-> 
-> ### UI/UX Requirements
-> 
-> - Mobile-first, clean layout.
-> - Wardrobe: Grid of items with filters.
-> - Trip Folders: Cart-style view + checklist toggle.
-> - Trip Dashboard: Shows all trips with quick access.
-> 
-> ### Tech Stack Preference
-> 
-> - Frontend: React (Next.js if supported).
-> - Local storage: IndexedDB (via a wrapper like idb).
-> - Image storage: Base64 or IndexedDB blobs (no cloud for now).
-> - Service workers for offline support.
+## ✨ Features
 
-### Rough Idea jotted in Notes Section
+- ✅ **Smart Catalog:** Build a personal inventory of all your travel items with images, categories, and tags. Mark items as "essential" to prioritize them.
+- ✅ **Trip Planning:** Create detailed trip folders with destinations, dates, and descriptions.
+- ✅ **Packing Checklist:** A dynamic checklist to track what's packed and what's not, with progress bars for visual feedback.
+- ✅ **Bag Management:** Create virtual bags (e.g., Carry-On, Suitcase) and assign items to specific bags to stay organized.
+- ✅ **Outfit Planner:** Group items into outfits for specific occasions (e.g., "Beach Day," "Dinner Party") to ensure you have what you need for every event.
+- ✅ **Repacking Mode:** A dedicated interface to ensure you repack everything before you leave your destination, preventing items from being left behind.
+- ✅ **Import/Export:** Backup your trip data, including all items and plans, as a JSON file. Import trips to easily share or restore them.
+- ✅ **Offline-First PWA:** Works entirely offline. All data is stored locally in the browser's IndexedDB. Installable on mobile and desktop for a native-app experience.
 
-Catalog of all clothes and stuff etc. So like add to cart/bag and packing plan on the go
+## 🌱 Origin
 
-Catalog of all clothes and stuff owned etc with images etc in app. So like add to cart/bag and packing plan on the go remotely in dedicated trip folder Helps to plan trip packing while commuting Also helps to make sure all stuff present when coming back and packing in hotel
+The idea for Packmate was born nearly a decade ago from a simple need: a better way to pack. I envisioned a digital catalog of everything I own, allowing me to "add" items to a virtual bag for a trip. This would help with packing before leaving, tracking items during the trip, and ensuring nothing was left behind when returning.
 
-### **Core Features**
+At the time, I lacked the full-stack development skills to bring it to life. However, with the evolution of modern web technologies like PWAs, client-side databases like IndexedDB, and powerful frameworks like Next.js, the concept is now fully achievable without complex backend infrastructure. This project is the realization of that long-held idea.
 
-### 1. **Smart Catalog (Wardrobe + Inventory)**
+## ⚡ Quick Start
 
-- Upload photos of clothes/items directly from your phone.
-- Categories & filters: clothing type, season, occasion, color, weight, frequency of use.
-- Mark “essentials” or “must carry” items (passport, charger, etc.).
+Get the project up and running on your local machine in minutes.
 
-### 2. **Trip Packing Folders**
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/Packmate-PWA.git
 
-- Create a folder for each trip (e.g., “Paris Trip – Aug 2025”).
-- Add items to the folder like a shopping cart.
-- Save & reuse packing templates (e.g., “Beach Trip Pack”, “Work Travel Pack”).
+# 2. Navigate to the project directory
+cd Packmate-PWA
 
-### 3. **Checklists & Tracking**
+# 3. Install dependencies
+npm install
 
-- **Packing Mode**: Mark items as “packed” to avoid forgetting.
-- **Return Mode**: Mark items again when re-packing in the hotel, ensuring nothing is left behind.
-- Smart reminders for essentials you *always* need.
-- Shows total count/weight (manual and smart scale integration using AI).
+# 4. Run the development server
+npm run dev
+```
 
-### 4. **Packing Categories**
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
 
-- Organize items in each trip folder by categories like Clothes, Electronics, Toiletries, and Documents.
-- Start with default categories or create your own custom ones.
-- Categories appear as collapsible sections in the packing checklist for easy navigation.
-- Makes packing lists cleaner and faster to review.
+## 🧭 Architecture
 
-### 5. **Outfit Planner for Occasions**
+Packmate is a client-side, offline-first Progressive Web App (PWA). It has no backend server; all data is stored and managed securely in the user's browser.
 
-- Create outfits and accessories mapped to events within a trip (e.g., Cocktail Night, Beach Afternoon).
-- Build outfits by grouping wardrobe items together.
-- Link outfits to one or multiple events, while keeping items connected to the packing checklist.
-- Ensures every planned occasion has the right look without overpacking.
+- **Framework:** [Next.js 14](https://nextjs.org/) with the App Router is used for the application structure, routing, and UI rendering.
+- **Data Layer:** [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) serves as the local database. The [`idb`](https://github.com/jakearchibald/idb) library provides a promise-based, lightweight wrapper around the IndexedDB API. A service layer at `/lib/db/services` abstracts all database operations, providing a clean API for the rest of the application.
+- **State Management:** Zustand is used for global client-side state management. It offers a minimal, hook-based API to manage state for trips, wardrobe items, and UI status without boilerplate.
+- **PWA Functionality:** The `next-pwa` package generates a service worker to cache application assets, enabling full offline functionality and making the app installable on desktop and mobile devices.
 
-### 6. **Bag Assignment**
+### System Diagram
 
-- Add multiple bags per trip (e.g., Carry-On, Suitcase, Backpack).
-- Assign items in the packing list to specific bags.
-- Switch to Bag View to see only the items inside one bag.
-- Helps organize packing and prevents “which bag did I put this in?” confusion.
+```mermaid
+graph TD
+    subgraph "Browser"
+        subgraph "Packmate PWA"
+            A[React Components] -->|Read/Write State| B(Zustand Store);
+            B -->|Calls Service Methods| C[Service Layer];
+            C -->|CRUD Operations| D[(IndexedDB via 'idb')];
+        end
+    end
+```
 
-### 7. Other Features
+## 🛣️ Future Roadmap & Potential Features
 
-- Dark/Light Mode Switch
-- Since it’s a PWA, you can plan on the go—even offline.
+- **AI-Powered Suggestions:**
+  - Automatically analyze trip details to **suggest missing essentials**.
+  - Provide **destination-aware recommendations** using weather and context (e.g., “Rainy in Amsterdam – don’t forget a raincoat”).
+  - Auto-tagging of items using image recognition AI.
+- **Cloud Sync & Collaboration:**
+  - Secure login with cloud sync (Firebase/Supabase) for a seamless cross-device experience.
+  - Share trip folders with friends or family for collaborative packing.
+- **Advanced Templates:**
+  - Offer pre-made packing templates for various trip types (e.g., "Ski Trip," "Business Conference").
 
-### **Future Roadmap of Potential Features**
+## 🔗 Comparable Projects
 
-- Automatically analyzes your trip details, categories, and outfits to **suggest missing essentials** you may have overlooked.
-- Provides **destination-aware recommendations** using real-time weather and context (e.g., “Rainy in Amsterdam – don’t forget a raincoat” or “Tropical beach trip – pack sunscreen and flip-flops”).
-- Outfit builder: Suggests combinations for the trip based on weather/location.
-- Integration with calendar & maps (e.g., knows you’re going on a 5-day business trip).
-- Auto-tagging using AI (e.g., “shirt”, “jeans”, “charger”, “toothbrush”).
-- **Remote Planning and Collaboration**
-    - Secure login with cloud sync for a seamless cross-platform experience.
-    - Works **offline** with sync-on-reconnect (Firebase/Supabase/IndexedDB).
-    - Share trip folders with friends or family for collaborative packing.
+While many wardrobe and packing apps exist, Packmate differentiates itself by being a comprehensive, offline-first PWA focused on the entire packing lifecycle.
 
-### Existing Apps That Share Elements of the Idea
-
-### 1. **Awear**
-
-- A digital wardrobe and outfit planner.
-- Lets users upload outfits, document wardrobe pieces, plan outfits, and create **trip packing lists**.
-- Focused on style and sustainable use of your existing clothing.
-    
-    [awearapp.com](https://www.awearapp.com/?utm_source=chatgpt.com)
-    
-
-### 2. **Stylebook** (iOS, one-time $4.99)
-
-- Upload photos, catalog clothes, plan outfits, **generate packing lists**, and track cost-per-wear and outfit usage.
-- Excellent for “pack by outfit” packing methodology and reducing overpacking.
-    
-    [Glamour](https://www.glamour.com/story/what-stylebook-closet-organization-app-taught-me-about-money-style?utm_source=chatgpt.com)[Vain Affair](https://vainaffair.com/outfit-planning-apps/?utm_source=chatgpt.com)[Less Closet](https://lesscloset.com/minimalist-wardrobe/capsule-wardrobe-planning/the-best-capsule-wardrobe-apps-and-tools/?utm_source=chatgpt.com)[Indyx](https://www.myindyx.com/blog/the-best-wardrobe-apps?utm_source=chatgpt.com)[stylebookapp.com](https://stylebookapp.com/stories/tropical_packing.html?utm_source=chatgpt.com)[Condé Nast Traveler](https://www.cntraveler.com/stories/2014-04-22/never-forget-toothbrush-again-with-packing-list-apps?utm_source=chatgpt.com)
-    
-
-### 3. **Whering**
-
-- Wardrobe creator with outfit planner, moodboards, virtual catalog.
-- Offers **packing list generation** based on scheduled outfits via event planner.
-- Also includes style stats and automated suggestions.
-    
-    [Vain Affair](https://vainaffair.com/outfit-planning-apps/?utm_source=chatgpt.com)[The Elegance Edit](https://theeleganceedit.com/best-capsule-wardrobe-app/?utm_source=chatgpt.com)[Good On You](https://goodonyou.eco/wardrobe-organising-apps/?utm_source=chatgpt.com)[Whering](https://whering.co.uk/faq/planner-and-packing-list?utm_source=chatgpt.com)
-    
-
-### 4. **GetWardrobe**
-
-- AI-powered virtual wardrobe app across Mac, iOS, Web.
-- Photo uploads with background removal, auto-categorization, outfit planning, weather-based calendar, **one-tap packing list generation**, item stats, and usage analysis.
-- Has a free tier (up to 100 items) and premium for unlimited use.
-    
-    [Apple](https://apps.apple.com/in/app/getwardrobe-outfit-planner/id656212466?utm_source=chatgpt.com)
-    
-
-### 5. **Alta**
-
-- A brand-new challenger (2025), inspired by *Clueless*.
-- AI-powered closet archive with cost-per-wear tracking, outfit planning, “digital avatar” for visual try-ons.
-- Currently focuses on styling rather than packing.
-    
-    [ELLE](https://www.elle.com/fashion/personal-style/a65551355/alta-ai-closet-styling-app-announcement/?utm_source=chatgpt.com)
-    
-
-### 6. **Capsule/Wardrobe Apps** (Cladwell, Acloset, Pureple, etc.)
-
-- **Cladwell**: Capsule wardrobe builder with weather-integrated suggestions (no photo uploads needed).
-    
-    [The Elegance Edit](https://theeleganceedit.com/best-capsule-wardrobe-app/?utm_source=chatgpt.com)
-    
-- **Acloset**: AI-backed uploads, outfit planning, calendars, and cost-per-wear analytics.
-    
-    [The Elegance Edit](https://theeleganceedit.com/best-capsule-wardrobe-app/?utm_source=chatgpt.com)[appverticals.com](https://www.appverticals.com/blog/outfit-planner-apps/?utm_source=chatgpt.com)
-    
-- **Pureple**: Free outfit planner with packing-list features and auto-tagging.
-    
-    [Less Closet](https://lesscloset.com/minimalist-wardrobe/capsule-wardrobe-planning/the-best-capsule-wardrobe-apps-and-tools/?utm_source=chatgpt.com)[appverticals.com](https://www.appverticals.com/blog/outfit-planner-apps/?utm_source=chatgpt.com)
-    
-- **Save Your Wardrobe**: Digital closet, packing, and wardrobe analytics with sustainability focus.
-    
-    [The Elegance Edit](https://theeleganceedit.com/best-capsule-wardrobe-app/?utm_source=chatgpt.com)[Indyx](https://www.myindyx.com/blog/the-best-wardrobe-apps?utm_source=chatgpt.com)
-    
-
-### 7. **Packing-focused Apps** (e.g., Packing / Packing Pro)
-
-- Pure packing-list tools with extensive list customization, item count tracking, optional image attachments, and packing checklist generation.
-- Do not integrate with wardrobe uploads or smart outfit planning.
-    
-    [Apple](https://apps.apple.com/us/app/packing-to-do/id294710480?utm_source=chatgpt.com)
-    
-
-## Summary: What Exists vs. Current Vision
-
-| Feature Area | Covered by Existing Apps? |
-| --- | --- |
+| Project | Key Features | How Packmate Differs |
+| :--- | :--- | :--- |
 | Wardrobe catalog & photo uploads | Yes — Stylebook, Awear, Whering, GetWardrobe, Alta, Pureple, Save Your Wardrobe |
 | Outfit planning/calendar | Yes — Most of the above apps include this |
 | Packing list from outfits or item list | Yes — Stylebook, Whering, GetWardrobe, Awear, Pureple |
@@ -267,3 +168,158 @@ Catalog of all clothes and stuff owned etc with images etc in app. So like add t
 - Reduces the risk of leaving items behind with bag-level tracking.
 - Centralizes your **wardrobe and travel essentials** in one easy-to-access app.
 - Works not just for clothes, but **all travel items** — gadgets, documents, toiletries, and more.
+| **Stylebook, Whering** | Digital wardrobe, outfit planning, packing lists. | Primarily native apps, often with a strong focus on fashion over general inventory. |
+| **Packing Pro** | Detailed checklist generation. | Lacks the visual wardrobe catalog and integrated planning features. |
+| **GetWardrobe** | AI-powered wardrobe and packing list generation. | Often requires a subscription for full features and is not offline-first. |
+
+Packmate's unique value is its combination of a comprehensive inventory system, detailed packing features (bags, occasions, repacking), and its commitment to being a free, private, offline-first PWA.
+
+## 🧑‍🎓 Target Users & Use Cases
+
+- **The Organized Traveler:** Planners who enjoy preparing for trips and want a digital tool to perfect their process.
+- **The Frequent Flyer:** Business travelers who can reuse templates for recurring trips, saving time and effort.
+- **The Forgetful Packer:** Anyone who has ever left a phone charger or a favorite shirt in a hotel room.
+- **The Family Vacation Planner:** A central place to organize packing for multiple people and complex trips.
+
+### User Scenarios
+
+- **Before a Trip:** While commuting, a user opens the app and starts building a packing plan for their "Paris Trip – Aug 2025". They add items to categories, assign outfits to upcoming events, and decide which bag each item will go in.
+- **During Packing:** At home, the user switches to checklist mode. They collapse categories (e.g., Toiletries, Electronics) and tick items off as they pack them into the right bag. The Bag View ensures nothing is misplaced.
+- **At the Hotel:** Before checking out, the user activates **Repacking Mode**. They check items back into their assigned bags to ensure nothing is left behind in the hotel room.
+
+## ⚠️ Risks & Challenges
+
+- **Data Persistence:** Since all data is stored in IndexedDB, it can be cleared by the user (e.g., "Clear Site Data"), leading to complete data loss. The current export feature is the only mitigation.
+- **No Cross-Device Sync:** The app is single-device by design in its current state. Data is not synced across a user's devices.
+- **Scalability:** Performance may degrade with extremely large inventories (thousands of items with high-resolution images) due to IndexedDB and browser memory limits.
+
+## 📂 Folder Structure
+
+The project follows a standard Next.js App Router structure, with a clear separation of concerns.
+
+```
+.
+├── app/                  # Next.js App Router pages and layouts
+├── components/           # React components, organized by feature
+│   ├── packing/          # Components for the packing checklist view
+│   ├── trips/            # Components for the main trips dashboard
+│   ├── ui/               # Re-usable shadcn/ui components
+│   └── wardrobe/         # Components for the wardrobe/inventory view
+├── lib/
+│   ├── db/               # IndexedDB setup, schema, and services
+│   └── store/            # Zustand store for global state
+├── public/               # Static assets, icons, and manifest.json
+├── .eslintrc.json
+├── next.config.js        # Next.js and PWA configuration
+├── package.json
+└── README.md
+```
+
+## 🛠 Built With
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | Next.js | React framework for building the PWA. |
+| **Language** | TypeScript | Static typing for robust and maintainable code. |
+| **Styling** | Tailwind CSS | Utility-first CSS framework for rapid UI development. |
+| **UI Components** | shadcn/ui | Re-usable, accessible components. |
+| **State Management** | Zustand | Lightweight global state management. |
+| **Local Database** | IndexedDB | Browser-based database for offline data storage. |
+| **DB Wrapper** | idb | A tiny promise-based wrapper for IndexedDB. |
+| **PWA** | next-pwa | Generates service workers for offline capabilities. |
+
+## ⚙️ Installation & Setup
+
+1.  **Prerequisites:**
+    -   Node.js (v18.18.0 or later)
+    -   npm or yarn
+
+2.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/your-username/Packmate-PWA.git
+    cd Packmate-PWA
+    ```
+
+3.  **Install Dependencies:**
+    ```bash
+    npm install
+    ```
+
+4.  **Run the Development Server:**
+    ```bash
+    npm run dev
+    ```
+    The application will be available at `http://localhost:3000`.
+
+## 🚀 Deployment
+
+The project is configured for static export (`output: 'export'` in `next.config.js`), making it easy to deploy to any static hosting service.
+
+### Vercel (Recommended)
+
+1.  Fork the repository.
+2.  Go to the Vercel Dashboard and import your forked project.
+3.  Vercel will automatically detect that it's a Next.js project and configure the build settings.
+4.  Click **Deploy**.
+
+### Other Static Hosts (Netlify, GitHub Pages)
+
+1.  Run the build command:
+    ```bash
+    npm run build
+    ```
+2.  This will generate a static site in the `out/` directory.
+3.  Deploy the contents of the `out/` directory to your hosting provider.
+
+## 🐛 Known Issues
+
+- **Data is local to a single browser** and can be lost if browser data is cleared. Regular backups using the "Export" feature are recommended.
+- The **import feature does not merge data**; it creates new items and a new trip. This can lead to duplicates in the wardrobe if the same trip is imported multiple times.
+
+## 💡 The Prompt That Started It All
+
+This project was bootstrapped with the help of AI. Here is the refined prompt that guided its initial development:
+
+> Build me a Progressive Web App (PWA) called “PackMate” with the following MVP features:
+>
+> ### Core Features (MVP)
+>
+> 1.  **Wardrobe and Stuff Catalog**
+>     - Add new items with image, name, category, and tags.
+>     - Store images and metadata locally (IndexedDB or LocalStorage).
+>     - Option to mark “essentials” (just a checkbox/tag).
+> 2.  **Trip Folders**
+>     - Create trip folders (e.g., “Paris Trip – Aug 2025”).
+>     - Add wardrobe items into a trip folder (like “add to cart”).
+>     - Save and reuse trip folders as templates.
+> 3.  **Packing & Unpacking Checklist**
+>     - Each trip folder has two modes:
+>       - **Packing Mode**: Tick items as packed.
+>       - **Return Mode**: Tick items again when re-packing.
+>     - Checklist state stored locally so progress is saved.
+>
+> ### PWA Requirements
+>
+> - Installable on mobile and desktop (Add to Home Screen).
+> - Works fully offline.
+> - Use **IndexedDB/LocalStorage** for all data in MVP.
+> - Export wardrobe/trip data as JSON for backup or migration.
+>
+> ### Future-Proofing (Not for MVP, but plan structure)
+>
+> - Design the data layer so it can later sync with a backend (Supabase, Firebase, or Node.js API).
+> - Keep interfaces modular: local DB now, cloud DB adapter later.
+
+## 🙏 Acknowledgments
+
+This project relies on the fantastic work of the open-source community. Special thanks to the creators and maintainers of Next.js, shadcn/ui, Zustand, and all other dependencies listed in `package.json`.
+
+## 👤 Author
+
+- **Karan Gupta**
+  - GitHub
+  - LinkedIn
+
+## 📜 License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
