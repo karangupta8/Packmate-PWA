@@ -196,7 +196,7 @@ export const tripItemService = {
     const tx = db.transaction('tripItems', 'readwrite');
     
     await Promise.all(
-      tripItems.map(item => tx.store.delete(item.id))
+      tripItems.map(item => tx.objectStore('tripItems').delete(item.id))
     );
     await tx.done;
   },
@@ -207,7 +207,7 @@ export const tripItemService = {
     const tx = db.transaction('tripItems', 'readwrite');
     
     await Promise.all(
-      tripItems.map(item => tx.store.delete(item.id))
+      tripItems.map(item => tx.objectStore('tripItems').delete(item.id))
     );
     await tx.done;
   },
@@ -338,7 +338,7 @@ export const outfitItemService = {
     const tx = db.transaction('outfitItems', 'readwrite');
     
     await Promise.all(
-      outfitItems.map(item => tx.store.delete(item.id))
+      outfitItems.map(item => tx.objectStore('outfitItems').delete(item.id))
     );
     await tx.done;
   }

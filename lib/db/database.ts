@@ -1,11 +1,11 @@
 import { openDB, IDBPDatabase } from 'idb';
-import { PackMateDB, defaultCategories, defaultPackingCategories } from './schema';
+import { PackMateDB, defaultCategories } from './schema';
 
 let dbPromise: Promise<IDBPDatabase<PackMateDB>>;
 
 export const getDB = () => {
   if (!dbPromise) {
-    dbPromise = openDB<PackMateDB>('PackMateDB', 3, {
+    dbPromise = openDB<PackMateDB>('PackMateDB', 2, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           // Items store
@@ -35,20 +35,23 @@ export const getDB = () => {
             categoriesStore.add(category);
           });
         }
-
+        
         if (oldVersion < 2) {
           // Occasions store
           const occasionsStore = db.createObjectStore('occasions', { keyPath: 'id' });
           occasionsStore.createIndex('by-trip', 'tripId');
 
-          // Outfit Items store
+          // Outfit items store
           const outfitItemsStore = db.createObjectStore('outfitItems', { keyPath: 'id' });
           outfitItemsStore.createIndex('by-occasion', 'occasionId');
-          outfitItemsStore.createIndex('by-item', 'itemId');
 
           // Bags store
           const bagsStore = db.createObjectStore('bags', { keyPath: 'id' });
           bagsStore.createIndex('by-trip', 'tripId');
+
+          // Packing categories store
+          const packingCategoriesStore = db.createObjectStore('packingCategories', { keyPath: 'id' });
+          packingCategoriesStore.createIndex('by-trip', 'tripId');
         }
       },
     });
@@ -111,22 +114,24 @@ export const compressImage = (file: File, maxSizeKB = 200): Promise<string> => {
  */
 export const exportData = async () => {
   const db = await getDB();
-  const tx = db.transaction(['items', 'trips', 'tripItems', 'categories', 'occasions', 'outfitItems', 'bags'], 'readonly');
+  const tx = db.transaction(['items', 'trips', 'tripItems', 'categories', 'settings', 'occasions', 'outfitItems', 'bags', 'packingCategories'], 'readonly');
   
-  const [items, trips, tripItems, categories, occasions, outfitItems, bags] = await Promise.all([
+  const [items, trips, tripItems, categories, settings, occasions, outfitItems, bags, packingCategories] = await Promise.all([
     tx.objectStore('items').getAll(),
     tx.objectStore('trips').getAll(),
     tx.objectStore('tripItems').getAll(),
     tx.objectStore('categories').getAll(),
+    tx.objectStore('settings').getAll(),
     tx.objectStore('occasions').getAll(),
     tx.objectStore('outfitItems').getAll(),
     tx.objectStore('bags').getAll(),
+    tx.objectStore('packingCategories').getAll(),
   ]);
 
   return {
-    version: 1,
+    version: 2,
     exportDate: new Date().toISOString(),
-    data: { items, trips, tripItems, categories, occasions, outfitItems, bags }
+    data: { items, trips, tripItems, categories, settings, occasions, outfitItems, bags, packingCategories }
   };
 };
 
@@ -135,7 +140,7 @@ export const exportData = async () => {
  */
 export const importData = async (jsonData: any) => {
   const db = await getDB();
-  const tx = db.transaction(['items', 'trips', 'tripItems', 'categories', 'occasions', 'outfitItems', 'bags'], 'readwrite');
+  const tx = db.transaction(['items', 'trips', 'tripItems', 'categories', 'settings', 'occasions', 'outfitItems', 'bags', 'packingCategories'], 'readwrite');
   
   // Clear existing data
   await Promise.all([
@@ -143,22 +148,26 @@ export const importData = async (jsonData: any) => {
     tx.objectStore('trips').clear(),
     tx.objectStore('tripItems').clear(),
     tx.objectStore('categories').clear(),
+    tx.objectStore('settings').clear(),
     tx.objectStore('occasions').clear(),
     tx.objectStore('outfitItems').clear(),
     tx.objectStore('bags').clear(),
+    tx.objectStore('packingCategories').clear(),
   ]);
 
   // Import new data
-  const { items, trips, tripItems, categories, occasions, outfitItems, bags } = jsonData.data;
+  const { items, trips, tripItems, categories, settings, occasions, outfitItems, bags, packingCategories } = jsonData.data;
   
   await Promise.all([
     ...items.map((item: any) => tx.objectStore('items').add(item)),
     ...trips.map((trip: any) => tx.objectStore('trips').add(trip)),
     ...tripItems.map((tripItem: any) => tx.objectStore('tripItems').add(tripItem)),
     ...(categories || []).map((category: any) => tx.objectStore('categories').add(category)),
+    ...(settings || []).map((setting: any) => tx.objectStore('settings').add(setting)),
     ...(occasions || []).map((occasion: any) => tx.objectStore('occasions').add(occasion)),
     ...(outfitItems || []).map((outfitItem: any) => tx.objectStore('outfitItems').add(outfitItem)),
     ...(bags || []).map((bag: any) => tx.objectStore('bags').add(bag)),
+    ...(packingCategories || []).map((packingCategory: any) => tx.objectStore('packingCategories').add(packingCategory)),
   ]);
 
   await tx.done;
