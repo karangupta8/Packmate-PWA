@@ -22,13 +22,13 @@ import { cn } from '@/lib/utils';
 const tripSchema = z.object({
   name: z.string().min(1, 'Trip name is required').max(50, 'Name must be under 50 characters'),
   destination: z.string().max(100, 'Destination must be under 100 characters').optional(),
-  startDate: z.date({ invalid_type_error: 'Start date is required' }),
-  endDate: z.date({ invalid_type_error: 'End date is required' }),
+  startDate: z.date({ message: 'Start date is required' }),
+  endDate: z.date({ message: 'End date is required' }),
   type: z.enum(['Business', 'Vacation', 'Weekend', 'Other']),
   description: z.string().max(200, 'Description must be under 200 characters').optional(),
-  travelers: z.coerce.number().int().min(1, 'Must have at least 1 traveler').optional(),
+  travelers: z.number().int().min(1, 'Must have at least 1 traveler').optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
-  isTemplate: z.boolean().default(false),
+  isTemplate: z.boolean(),
 }).refine((data) => data.endDate >= data.startDate, {
   message: "End date must be after start date",
   path: ["endDate"],

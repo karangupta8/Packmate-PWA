@@ -20,7 +20,7 @@ const itemSchema = z.object({
   name: z.string().min(1, 'Name is required').max(50, 'Name must be under 50 characters'),
   category: z.string().min(1, 'Category is required'),
   tags: z.string(),
-  essential: z.boolean().default(false),
+  essential: z.boolean(),
 });
 
 type ItemFormData = z.infer<typeof itemSchema>;

@@ -17,7 +17,7 @@ import { wardrobeService } from '@/lib/db/services';
 import { WardrobeItem } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { compressImage } from '@/lib/utils/imageOptimization';
+import { compressImage } from '@/lib/db/database';
 import { usePagination } from '@/lib/hooks/usePagination';
 import { debounce } from '@/lib/utils/performance';
 

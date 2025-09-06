@@ -43,6 +43,7 @@ export interface WardrobeItem {
   tags: string[];
   essential: boolean;
   image?: string; // Base64 compressed image
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
