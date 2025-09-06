@@ -2,7 +2,7 @@ import { DBSchema } from 'idb';
 
 export interface PackMateDB extends DBSchema {
   items: {
-    key: string;
+    key: 'items';
     value: WardrobeItem;
     indexes: {
       'by-category': string;
@@ -11,7 +11,7 @@ export interface PackMateDB extends DBSchema {
     };
   };
   trips: {
-    key: string;
+    key: 'trips';
     value: Trip;
     indexes: {
       'by-date': Date;
@@ -19,7 +19,7 @@ export interface PackMateDB extends DBSchema {
     };
   };
   tripItems: {
-    key: string;
+    key: 'tripItems';
     value: TripItem;
     indexes: {
       'by-trip': string;
@@ -27,11 +27,11 @@ export interface PackMateDB extends DBSchema {
     };
   };
   categories: {
-    key: string;
+    key: 'categories';
     value: Category;
   };
   settings: {
-    key: string;
+    key: 'settings';
     value: any;
   };
 }
@@ -55,6 +55,9 @@ export interface Trip {
   endDate: Date;
   type: 'Business' | 'Vacation' | 'Weekend' | 'Other';
   isTemplate: boolean;
+  travelers?: number;
+  description?: string;
+  priority?: 'low' | 'medium' | 'high';
   createdAt: Date;
   updatedAt: Date;
 }
