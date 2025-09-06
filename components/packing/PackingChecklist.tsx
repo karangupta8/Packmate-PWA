@@ -25,7 +25,9 @@ import {
   Clock,
   MoreVertical,
   Edit,
-  RefreshCcw
+  RefreshCcw,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { BagManager } from './BagManager';
 import { OccasionManager } from './OccasionManager';
@@ -55,6 +57,7 @@ export function PackingChecklist() {
   const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [activeTab, setActiveTab] = useState('category');
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (currentTrip) {
@@ -122,6 +125,13 @@ export function PackingChecklist() {
 
     return grouped;
   }, [tripItemsWithDetails]);
+
+  const toggleCategoryCollapse = (categoryName: string) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [categoryName]: !prev[categoryName]
+    }));
+  };
 
   const occasionsByItemId = useMemo(() => {
     const map = new Map<string, Occasion[]>();
@@ -486,24 +496,26 @@ export function PackingChecklist() {
 
         <TabsContent value="category" className="space-y-4">
           {Object.entries(itemsByCategory).length > 0 ? (
-            Object.entries(itemsByCategory).map(([categoryName, items]) => (
-              <Card key={categoryName}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{categoryName}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{items.length}</Badge>
-                      <Badge variant="outline">
-                        {items.filter(item => item.packed).length} packed
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {items.map(renderItemCard)}
-                </CardContent>
-              </Card>
-            ))
+            Object.entries(itemsByCategory).map(([categoryName, items]) => {
+              const isCollapsed = collapsedCategories[categoryName];
+              return (
+                <Card key={categoryName}>
+                  <CardHeader className="pb-3 cursor-pointer" onClick={() => toggleCategoryCollapse(categoryName)}>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{categoryName}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{items.length}</Badge>
+                        <Badge variant="outline">
+                          {items.filter(item => item.packed).length} packed
+                        </Badge>
+                        {isCollapsed ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronUp className="h-5 w-5 text-muted-foreground" />}
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  {!isCollapsed && <CardContent className="space-y-3">{items.map(renderItemCard)}</CardContent>}
+                </Card>
+              );
+            })
           ) : (
             <Card>
               <CardContent className="p-8 text-center">
