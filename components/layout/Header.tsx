@@ -1,6 +1,6 @@
 'use client';
 
-import { Settings, Download, Upload } from 'lucide-react';
+import { Settings, Download, Upload } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store/useStore';
 import { exportData, importData } from '@/lib/db/database';
@@ -64,18 +64,25 @@ export const Header = () => {
   };
 
   return (
-    <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-      <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
-        <h1 className="text-xl font-bold text-foreground">{getTitle()}</h1>
-        
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={handleExport} className="flex items-center justify-center">
-            <Download className="w-5 h-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleImport} className="flex items-center justify-center">
-            <Upload className="w-5 h-5" />
-          </Button>
-        </div>
+    <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
+      <h1 className="text-xl font-bold">{getTitle()}</h1>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleExport}
+          className="h-9 w-9"
+        >
+          <Download className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleImport}
+          className="h-9 w-9"
+        >
+          <Upload className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );

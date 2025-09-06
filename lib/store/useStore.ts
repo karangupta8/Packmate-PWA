@@ -16,6 +16,13 @@ interface AppState {
   currentTrip: Trip | null;
   tripItems: TripItem[];
   
+  // Loading states for progressive loading
+  dataLoaded: {
+    wardrobe: boolean;
+    trips: boolean;
+    categories: boolean;
+  };
+  
   // Actions
   setActiveTab: (tab: 'home' | 'wardrobe' | 'trips' | 'packing') => void;
   setTheme: (theme: 'light' | 'dark') => void;
@@ -38,6 +45,7 @@ interface AppState {
   addCategory: (category: Category) => void;
   updateCategory: (id: string, updates: Partial<Category>) => void;
   removeCategory: (id: string) => void;
+  setDataLoaded: (key: keyof AppState['dataLoaded'], loaded: boolean) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -52,6 +60,13 @@ export const useStore = create<AppState>((set, get) => ({
   categories: [],
   currentTrip: null,
   tripItems: [],
+  
+  // Initial loading states
+  dataLoaded: {
+    wardrobe: false,
+    trips: false,
+    categories: false,
+  },
   
   // UI Actions
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -125,6 +140,11 @@ export const useStore = create<AppState>((set, get) => ({
   removeCategory: (id) =>
     set((state) => ({
       categories: state.categories.filter((category) => category.id !== id),
+    })),
+  
+  setDataLoaded: (key, loaded) =>
+    set((state) => ({
+      dataLoaded: { ...state.dataLoaded, [key]: loaded },
     })),
 }));
 

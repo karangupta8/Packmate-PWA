@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search, Filter, Plus, Star, Edit, Trash2, Package, Briefcase as Suitcase, Check, X } from 'lucide-react';
+import { Search, Filter, Plus, Star, Edit, Trash2, Package, Briefcase as Suitcase, Check, X } from '@/lib/icons';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,7 +17,9 @@ import { wardrobeService } from '@/lib/db/services';
 import { WardrobeItem } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { compressImage } from '@/lib/db/database';
+import { compressImage } from '@/lib/utils/imageOptimization';
+import { usePagination } from '@/lib/hooks/usePagination';
+import { debounce } from '@/lib/utils/performance';
 
 export const WardrobeGrid = () => {
   const { wardrobeItems, categories, removeWardrobeItem, updateWardrobeItem } = useStore();
@@ -47,6 +49,18 @@ export const WardrobeGrid = () => {
       return matchesSearch && matchesCategory && matchesEssential;
     });
   }, [wardrobeItems, searchQuery, selectedCategory, essentialFilter]);
+
+  // Use pagination for large lists
+  const { paginatedData: paginatedItems, hasNextPage, hasPreviousPage, nextPage, previousPage } = usePagination({
+    data: filteredItems,
+    itemsPerPage: 20,
+  });
+
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () => debounce((query: string) => setSearchQuery(query), 300),
+    []
+  );
 
   const handleDeleteItem = async (id: string) => {
     if (multiSelectMode) {
@@ -143,8 +157,7 @@ export const WardrobeGrid = () => {
           <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search items or tags..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => debouncedSearch(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -219,115 +232,143 @@ export const WardrobeGrid = () => {
       )}
 
       {/* Items Grid */}
-      {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 pb-20">
-          {filteredItems.map((item) => {
-            const category = categories.find(cat => cat.id === item.category);
-            const isSelected = selectedItems.has(item.id);
-            
-            return (
-              <Card 
-                key={item.id} 
-                className={cn(
-                  "overflow-hidden transition-all duration-200",
-                  multiSelectMode && isSelected && "ring-2 ring-primary ring-offset-2"
-                )}
-              >
-                <div className="aspect-square relative">
-                  {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <Package size={32} className="text-muted-foreground" />
-                    </div>
+      {paginatedItems.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 pb-20">
+            {paginatedItems.map((item) => {
+              const category = categories.find(cat => cat.id === item.category);
+              const isSelected = selectedItems.has(item.id);
+              
+              return (
+                <Card 
+                  key={item.id} 
+                  className={cn(
+                    "overflow-hidden transition-all duration-200",
+                    multiSelectMode && isSelected && "ring-2 ring-primary ring-offset-2"
                   )}
-                  
-                  {/* Essential Star */}
-                  {item.essential && (
-                    <div className="absolute top-2 right-2">
-                      <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                    </div>
-                  )}
-                  
-                  {/* Multi-select Checkbox */}
-                  {multiSelectMode && (
-                    <div className="absolute top-2 left-2">
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) => handleItemSelect(item.id, checked as boolean)}
-                        className="bg-white/90 border-2"
+                >
+                  <div className="aspect-square relative">
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Package size={32} className="text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    {/* Essential Star */}
+                    {item.essential && (
+                      <div className="absolute top-2 right-2">
+                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                      </div>
+                    )}
+                    
+                    {/* Multi-select Checkbox */}
+                    {multiSelectMode && (
+                      <div className="absolute top-2 left-2">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => handleItemSelect(item.id, checked as boolean)}
+                          className="bg-white/90 border-2"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Single Item Add to Trip Button */}
+                    {!multiSelectMode && (
+                      <div className="absolute bottom-2 right-2">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-9 w-9 bg-white/90 hover:bg-white flex items-center justify-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddSingleItemToTrip(item);
+                          }}
+                        >
+                          <Suitcase className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   
-                  {/* Single Item Add to Trip Button */}
-                  {!multiSelectMode && (
-                    <div className="absolute bottom-2 right-2">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-9 w-9 bg-white/90 hover:bg-white flex items-center justify-center"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddSingleItemToTrip(item);
-                        }}
-                      >
-                        <Suitcase className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                
-                <CardContent className="p-3">
-                  <h3 className="font-medium text-sm truncate">{item.name}</h3>
-                  {category && (
-                    <p className="text-xs text-muted-foreground mb-2">{category.name}</p>
-                  )}
-                  
-                  {item.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {item.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {item.tags.length > 2 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{item.tags.length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                  
-                  {!multiSelectMode && (
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setEditingItem(item)}
-                      >
-                        <Edit size={14} />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setDeleteItem(item.id)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  <CardContent className="p-3">
+                    <h3 className="font-medium text-sm truncate">{item.name}</h3>
+                    {category && (
+                      <p className="text-xs text-muted-foreground mb-2">{category.name}</p>
+                    )}
+                    
+                    {item.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {item.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {item.tags.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{item.tags.length - 2}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    
+                    {!multiSelectMode && (
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setEditingItem(item)}
+                        >
+                          <Edit size={14} />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setDeleteItem(item.id)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Pagination Controls */}
+          {filteredItems.length > 20 && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={previousPage}
+                disabled={!hasPreviousPage}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {Math.floor(paginatedItems.length / 20) + 1} of {Math.ceil(filteredItems.length / 20)}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextPage}
+                disabled={!hasNextPage}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-12">
           <Package size={48} className="mx-auto text-muted-foreground mb-4" />

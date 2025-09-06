@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Shirt, Briefcase as Suitcase, CheckSquare, Settings, Sun, Moon } from 'lucide-react';
+import { Home, Shirt, Briefcase as Suitcase, CheckSquare, Settings, Sun, Moon } from '@/lib/icons';
 import { useStore, useTheme } from '@/lib/store/useStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Shirt, Star, Briefcase as Suitcase, TrendingUp, Calendar, MapPin, Package, ArrowRight, Sparkles, CheckCircle, Lightbulb, Target, Smartphone, Camera, FolderOpen, Users, Clock, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Shirt, Star, Briefcase as Suitcase, TrendingUp, Calendar, MapPin, Package, ArrowRight, Sparkles, CheckCircle, Lightbulb, Target, Smartphone, Camera, FolderOpen, Users, Clock, Zap, ChevronDown, ChevronUp } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,7 @@ export const HomePage = () => {
     <div className="space-y-6 pb-20">
       {/* Hero Section */}
       <Card className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-900 border-0">
-        <div className="absolute inset-0 bg-[url('https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=1200')] bg-cover bg-center opacity-10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 to-indigo-200/20 dark:from-blue-900/20 dark:to-indigo-800/20" />
         <CardContent className="relative p-6">
           <div className="flex items-start justify-between">
             <div className="space-y-3">
@@ -260,7 +260,6 @@ export const HomePage = () => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Total Items</p>
-
               </div>
               <p className="text-3xl font-bold">{stats.totalItems}</p>
             </div>
@@ -272,7 +271,6 @@ export const HomePage = () => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Essentials</p>
-
               </div>
               <p className="text-3xl font-bold">{stats.essentialItems}</p>
             </div>
@@ -284,7 +282,6 @@ export const HomePage = () => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Active Trips</p>
-
               </div>
               <p className="text-3xl font-bold">{stats.activeTrips}</p>
             </div>
@@ -296,7 +293,6 @@ export const HomePage = () => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Templates</p>
-
               </div>
               <div>
               <p className="text-3xl font-bold">{stats.templates}</p>

@@ -58,8 +58,9 @@ export const getDB = () => {
 
 /**
  * Compresses an image file to a maximum size and returns base64 string
+ * Optimized version with better compression
  */
-export const compressImage = (file: File, maxSizeKB = 500): Promise<string> => {
+export const compressImage = (file: File, maxSizeKB = 200): Promise<string> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
@@ -67,7 +68,7 @@ export const compressImage = (file: File, maxSizeKB = 500): Promise<string> => {
 
     img.onload = () => {
       // Calculate new dimensions maintaining aspect ratio
-      const maxDimension = 800;
+      const maxDimension = 400; // Reduced from 800
       let { width, height } = img;
       
       if (width > height) {
@@ -88,7 +89,7 @@ export const compressImage = (file: File, maxSizeKB = 500): Promise<string> => {
       // Draw and compress
       ctx.drawImage(img, 0, 0, width, height);
       
-      let quality = 0.8;
+      let quality = 0.7; // Start with lower quality
       let dataUrl = canvas.toDataURL('image/jpeg', quality);
       
       // Reduce quality until under maxSize
