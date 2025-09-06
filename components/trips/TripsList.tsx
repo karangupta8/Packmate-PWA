@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Calendar, MapPin, Users, Star, Package, Search, Filter, MoreVertical, Edit, Trash2, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useStore } from '@/lib/store/useStore';
 import { TripForm } from './TripForm';
 import { toast } from 'sonner';
-import { tripService, tripItemService, occasionService, bagService, outfitItemService } from '@/lib/db/services';
+import { tripService, tripItemService, occasionService, bagService, outfitItemService, wardrobeService } from '@/lib/db/services';
+import { Trip, WardrobeItem, TripItem } from '@/lib/db/schema';
 
 // Helper function to determine trip status
 const getTripStatus = (trip: any) => {
@@ -37,14 +38,16 @@ export const TripsList = () => {
     setCurrentTrip, 
     setActiveTab,
     tripItems,
-    wardrobeItems 
+    setTripItems,
+    wardrobeItems,
+    setWardrobeItems
   } = useStore();
   
   const [showTripForm, setShowTripForm] = useState(false);
   const [editingTrip, setEditingTrip] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showImportDialog, setShowImportDialog] = useState(false);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadTrips();
@@ -61,8 +64,9 @@ export const TripsList = () => {
 
   const filteredTrips = useMemo(() => {
     return trips.filter(trip => {
-      const matchesSearch = trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           trip.destination.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch =
+        trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (trip.destination || '').toLowerCase().includes(searchQuery.toLowerCase());
       
       if (!matchesSearch) return false;
       
@@ -72,6 +76,26 @@ export const TripsList = () => {
       return status.toLowerCase() === statusFilter;
     });
   }, [trips, searchQuery, statusFilter]);
+
+  const tripStats = useMemo(() => {
+    const itemsByTrip = tripItems.reduce((acc, item) => {
+      if (!acc[item.tripId]) {
+        acc[item.tripId] = [];
+      }
+      acc[item.tripId].push(item);
+      return acc;
+    }, {} as Record<string, TripItem[]>);
+
+    const stats = new Map<string, { itemCount: number; packedCount: number }>();
+    for (const trip of trips) {
+      const itemsInTrip = itemsByTrip[trip.id] || [];
+      stats.set(trip.id, {
+        itemCount: itemsInTrip.length,
+        packedCount: itemsInTrip.filter(item => item.packed).length,
+      });
+    }
+    return stats;
+  }, [trips, tripItems]);
 
   const handleCreateTrip = () => {
     setEditingTrip(null);
@@ -171,34 +195,39 @@ export const TripsList = () => {
         throw new Error('Invalid import file format');
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _t, createdAt: _tc, updatedAt: _tu, ...tripData } = importData.trip;
       // Create new trip
       const newTrip = await tripService.add({
-        ...importData.trip,
-        id: undefined, // Let database generate new ID
+        ...tripData,
         name: `${importData.trip.name} (Imported)`
       });
 
       // Import wardrobe items
       const wardrobeItemMap = new Map();
+      const newWardrobeItems: WardrobeItem[] = [];
       for (const item of importData.wardrobeItems) {
-        const newItem = await wardrobeService.add({
-          ...item,
-          id: undefined
-        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _i, createdAt: _ic, updatedAt: _iu, ...itemData } = item;
+        const newItem = await wardrobeService.add(itemData);
+        newWardrobeItems.push(newItem);
         wardrobeItemMap.set(item.id, newItem.id);
       }
 
       // Import trip items
+      const newTripItems: TripItem[] = [];
       if (importData.tripItems) {
         for (const tripItem of importData.tripItems) {
           const newItemId = wardrobeItemMap.get(tripItem.itemId);
           if (newItemId) {
-            await tripItemService.add({
-              ...tripItem,
-              id: undefined,
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id: _ti, addedAt: _ta, ...tripItemData } = tripItem;
+            const newTripItem = await tripItemService.add({
+              ...tripItemData,
               tripId: newTrip.id,
               itemId: newItemId
             });
+            newTripItems.push(newTripItem);
           }
         }
       }
@@ -206,9 +235,10 @@ export const TripsList = () => {
       // Import occasions and outfit items
       if (importData.occasions) {
         for (const occasion of importData.occasions) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id: _o, createdAt: _oc, ...occasionData } = occasion;
           const newOccasion = await occasionService.add({
-            ...occasion,
-            id: undefined,
+            ...occasionData,
             tripId: newTrip.id
           });
 
@@ -221,9 +251,10 @@ export const TripsList = () => {
             for (const outfitItem of occasionOutfitItems) {
               const newItemId = wardrobeItemMap.get(outfitItem.itemId);
               if (newItemId) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { id: _oi, addedAt: _oa, ...outfitItemData } = outfitItem;
                 await outfitItemService.add({
-                  ...outfitItem,
-                  id: undefined,
+                  ...outfitItemData,
                   occasionId: newOccasion.id,
                   itemId: newItemId
                 });
@@ -236,23 +267,30 @@ export const TripsList = () => {
       // Import bags
       if (importData.bags) {
         for (const bag of importData.bags) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { id: _b, createdAt: _bc, ...bagData } = bag;
           await bagService.add({
-            ...bag,
-            id: undefined,
+            ...bagData,
             tripId: newTrip.id
           });
         }
       }
 
+      // Update local store state to reflect imported data
+      setWardrobeItems([...wardrobeItems, ...newWardrobeItems]);
+      setTripItems([...tripItems, ...newTripItems]);
       await loadTrips();
+
       toast.success('Trip imported successfully');
-      setShowImportDialog(false);
     } catch (error) {
       toast.error('Failed to import trip. Please check the file format.');
+      console.error("Import failed:", error);
     }
 
     // Reset file input
-    event.target.value = '';
+    if (importFileInputRef.current) {
+      importFileInputRef.current.value = '';
+    }
   };
 
   return (
@@ -266,10 +304,17 @@ export const TripsList = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+          <Button variant="outline" onClick={() => importFileInputRef.current?.click()}>
             <Upload size={16} className="mr-2" />
             Import
           </Button>
+          <input
+            type="file"
+            ref={importFileInputRef}
+            className="hidden"
+            accept=".json"
+            onChange={handleImportTrip}
+          />
           <Button onClick={handleCreateTrip}>
             <Plus size={16} className="mr-2" />
             New Trip
@@ -306,8 +351,7 @@ export const TripsList = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTrips.map((trip) => {
           const { status, variant } = getTripStatus(trip);
-          const tripItemCount = tripItems.filter(item => item.tripId === trip.id).length;
-          const packedCount = tripItems.filter(item => item.tripId === trip.id && item.packed).length;
+          const stats = tripStats.get(trip.id) || { itemCount: 0, packedCount: 0 };
           
           return (
             <Card 
@@ -373,7 +417,7 @@ export const TripsList = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <Users size={14} />
-                    <span>{trip.travelers}</span>
+                    <span>{trip.travelers || 1} traveler{trip.travelers && trip.travelers > 1 ? 's' : ''}</span>
                   </div>
                 </div>
 
@@ -386,13 +430,13 @@ export const TripsList = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Packing Progress</span>
-                    <span>{tripItemCount > 0 ? `${packedCount}/${tripItemCount}` : '0/0'}</span>
+                    <span>{stats.itemCount > 0 ? `${stats.packedCount}/${stats.itemCount}` : '0/0'}</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
                     <div 
                       className="bg-primary h-2 rounded-full transition-all duration-300" 
                       style={{ 
-                        width: tripItemCount > 0 ? `${(packedCount / tripItemCount) * 100}%` : '0%' 
+                        width: stats.itemCount > 0 ? `${(stats.packedCount / stats.itemCount) * 100}%` : '0%' 
                       }}
                     />
                   </div>
@@ -402,7 +446,7 @@ export const TripsList = () => {
                   <div className="flex items-center gap-2">
                     <Package size={14} className="text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      {tripItemCount} items
+                      {stats.itemCount} items
                     </span>
                   </div>
                   {trip.priority === 'high' && (
@@ -438,7 +482,7 @@ export const TripsList = () => {
 
       {/* Trip Form Dialog */}
       <Dialog open={showTripForm} onOpenChange={setShowTripForm}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editingTrip ? 'Edit Trip' : 'Create New Trip'}
@@ -466,26 +510,6 @@ export const TripsList = () => {
             }}
             onCancel={() => setShowTripForm(false)}
           />
-        </DialogContent>
-      </Dialog>
-
-      {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Import Trip</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Select a trip export file to import. This will create a new trip with all associated data.
-            </p>
-            <Input
-              type="file"
-              accept=".json"
-              onChange={handleImportTrip}
-              className="cursor-pointer"
-            />
-          </div>
         </DialogContent>
       </Dialog>
     </div>

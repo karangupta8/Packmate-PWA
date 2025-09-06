@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Calendar, 
@@ -61,12 +61,19 @@ export const OccasionManager = ({
 }: OccasionManagerProps) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedOccasion, setSelectedOccasion] = useState<Occasion | null>(null);
+  const [editingOccasion, setEditingOccasion] = useState<Occasion | null>(null);
   const [newOccasion, setNewOccasion] = useState({
     name: '',
     description: '',
     icon: occasionIconNames[0],
     color: occasionColors[0],
   });
+
+  useEffect(() => {
+    if (editingOccasion) {
+      setShowCreateForm(false);
+    }
+  }, [editingOccasion]);
 
   // Get trip items with wardrobe details
   const tripItemsWithDetails = useMemo(() => {
@@ -100,6 +107,24 @@ export const OccasionManager = ({
       toast.success('Occasion created');
     } catch (error) {
       toast.error('Failed to create occasion');
+    }
+  };
+
+  const handleUpdateOccasion = async () => {
+    if (!editingOccasion || !editingOccasion.name.trim()) return;
+
+    try {
+      const updatedOccasion = await occasionService.update(editingOccasion.id, {
+        name: editingOccasion.name.trim(),
+        description: editingOccasion.description?.trim() || undefined,
+        icon: editingOccasion.icon,
+        color: editingOccasion.color,
+      });
+      setOccasions(occasions.map(o => o.id === updatedOccasion.id ? updatedOccasion : o));
+      setEditingOccasion(null);
+      toast.success('Occasion updated');
+    } catch (error) {
+      toast.error('Failed to update occasion');
     }
   };
 
@@ -314,49 +339,88 @@ export const OccasionManager = ({
       {/* Existing Occasions */}
       <div className="space-y-2">
             {occasions.map((occasion) => {
-              const outfitItemCount = outfitItems.filter(oi => oi.occasionId === occasion.id).length;
+              const occasionOutfitItems = outfitItems.filter(oi => oi.occasionId === occasion.id);
+              const occasionItems = occasionOutfitItems
+                .map(oi => tripItemsWithDetails.find(ti => ti.itemId === oi.itemId))
+                .filter(Boolean as any);
+              const outfitItemCount = occasionItems.length;
               
               return (
                 <Card key={occasion.id} className="cursor-pointer hover:bg-accent/50 transition-colors">
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div 
-                        className="flex items-center gap-3 flex-1"
-                        onClick={() => setSelectedOccasion(occasion)}
-                      >
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: occasion.color }}
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium">{occasion.name}</h4>
-                          {occasion.description && (
-                            <p className="text-sm text-muted-foreground truncate">{occasion.description}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {outfitItemCount} item{outfitItemCount !== 1 ? 's' : ''} selected
-                          </p>
+                  {editingOccasion?.id === occasion.id ? (
+                    <CardContent className="p-4 space-y-4">
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor={`occasion-name-${occasion.id}`}>Occasion Name</Label>
+                          <Input
+                            id={`occasion-name-${occasion.id}`}
+                            value={editingOccasion.name}
+                            onChange={(e) => setEditingOccasion({ ...editingOccasion, name: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>Color</Label>
+                          <div className="flex gap-2 mt-2">
+                            {occasionColors.map((color) => (
+                              <button
+                                key={color}
+                                className={`w-8 h-8 rounded-full border-2 ${editingOccasion.color === color ? 'border-foreground' : 'border-transparent'}`}
+                                style={{ backgroundColor: color }}
+                                onClick={() => setEditingOccasion({ ...editingOccasion, color })}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={handleUpdateOccasion} className="flex-1">Save</Button>
+                          <Button variant="outline" onClick={() => setEditingOccasion(null)}>Cancel</Button>
                         </div>
                       </div>
-                      
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
+                    </CardContent>
+                  ) : (
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div 
+                          className="flex items-start gap-3 flex-1 min-w-0"
                           onClick={() => setSelectedOccasion(occasion)}
                         >
-                          <Edit2 size={14} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteOccasion(occasion.id)}
-                        >
-                          <Trash2 size={14} />
-                        </Button>
+                          <div 
+                            className="w-4 h-4 rounded-full mt-1 flex-shrink-0" 
+                            style={{ backgroundColor: occasion.color }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium truncate">{occasion.name}</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {outfitItemCount} item{outfitItemCount !== 1 ? 's' : ''} selected
+                            </p>
+                            {occasionItems.length > 0 && (
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {occasionItems.slice(0, 3).map(({ item }) => item!.name).join(', ')}
+                                {occasionItems.length > 3 ? ` and ${occasionItems.length - 3} more` : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingOccasion(occasion)}
+                          >
+                            <Edit2 size={14} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteOccasion(occasion.id)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  )}
                 </Card>
               );
             })}

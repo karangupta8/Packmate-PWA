@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, Fragment } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from '@/lib/store/useStore';
-import { tripItemService, bagService, occasionService, outfitItemService } from '@/lib/db/services';
-import { TripItem, Bag, Occasion, OutfitItem } from '@/lib/db/schema';
+import { tripItemService, bagService, occasionService, outfitItemService, wardrobeService } from '@/lib/db/services';
+import { TripItem, Bag, Occasion, OutfitItem, WardrobeItem } from '@/lib/db/schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { 
   Package, 
@@ -18,15 +19,22 @@ import {
   Star, 
   Luggage, 
   CheckCircle2, 
-  Circle,
   Plus,
   Settings,
   MapPin,
-  Clock
+  Clock,
+  MoreVertical,
+  Edit,
+  RefreshCcw
 } from 'lucide-react';
 import { BagManager } from './BagManager';
 import { OccasionManager } from './OccasionManager';
+import { RepackingManager } from './RepackingManager';
 import { format } from 'date-fns';
+import { AddItemToTripDialog } from './AddItemToTripDialog';
+import { CategoryManager } from './CategoryManager';
+import { EditWardrobeItemDialog } from '../wardrobe/EditWardrobeItemDialog';
+import { compressImage } from '@/lib/db/database';
 
 export function PackingChecklist() {
   const { 
@@ -34,6 +42,7 @@ export function PackingChecklist() {
     tripItems, 
     setTripItems, 
     wardrobeItems, 
+    setWardrobeItems,
     categories,
     updateTripItem,
     removeTripItem
@@ -42,6 +51,9 @@ export function PackingChecklist() {
   const [bags, setBags] = useState<Bag[]>([]);
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [outfitItems, setOutfitItems] = useState<OutfitItem[]>([]);
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [activeTab, setActiveTab] = useState('category');
 
   useEffect(() => {
@@ -60,11 +72,10 @@ export function PackingChecklist() {
       ]);
 
       // Get outfit items for all occasions
-      const allOutfitItems = [];
-      for (const occasion of occasionsData) {
-        const occasionOutfitItems = await outfitItemService.getByOccasionId(occasion.id);
-        allOutfitItems.push(...occasionOutfitItems);
-      }
+      const outfitItemPromises = occasionsData.map(occasion =>
+        outfitItemService.getByOccasionId(occasion.id)
+      );
+      const allOutfitItems = (await Promise.all(outfitItemPromises)).flat();
 
       setBags(bagsData);
       setOccasions(occasionsData);
@@ -112,6 +123,24 @@ export function PackingChecklist() {
     return grouped;
   }, [tripItemsWithDetails]);
 
+  const occasionsByItemId = useMemo(() => {
+    const map = new Map<string, Occasion[]>();
+    if (!occasions.length || !outfitItems.length) {
+      return map;
+    }
+    for (const outfitItem of outfitItems) {
+      if (!outfitItem.itemId) continue;
+      if (!map.has(outfitItem.itemId)) {
+        map.set(outfitItem.itemId, []);
+      }
+      const occasion = occasions.find(o => o.id === outfitItem.occasionId);
+      if (occasion) {
+        map.get(outfitItem.itemId)!.push(occasion);
+      }
+    }
+    return map;
+  }, [outfitItems, occasions]);
+
   const handleTogglePacked = async (tripItemId: string, packed: boolean) => {
     try {
       await tripItemService.updatePacked(tripItemId, packed);
@@ -119,6 +148,98 @@ export function PackingChecklist() {
       toast.success(packed ? 'Item marked as packed' : 'Item marked as unpacked');
     } catch (error) {
       toast.error('Failed to update packing status');
+    }
+  };
+
+  const handleAddItemToTrip = async (itemsToAdd: WardrobeItem[]) => {
+    if (!currentTrip) return;
+    try {
+        const newTripItems: TripItem[] = [];
+        for (const item of itemsToAdd) {
+            const newTripItem = await tripItemService.add({
+                tripId: currentTrip.id,
+                itemId: item.id,
+                packed: false,
+                essential: item.essential,
+            });
+            newTripItems.push(newTripItem);
+        }
+        setTripItems([...tripItems, ...newTripItems]);
+        toast.success(`${itemsToAdd.length} item(s) added to the trip.`);
+        setShowAddItemDialog(false);
+    } catch (error) {
+        toast.error("Failed to add items to trip.");
+    }
+  };
+
+  const handleAssignBag = async (tripItemId: string, bagId: string | null) => {
+    try {
+        const bagIdToSet = bagId === null ? undefined : bagId;
+        await tripItemService.update(tripItemId, { bagId: bagIdToSet });
+        updateTripItem(tripItemId, { bagId: bagIdToSet });
+        toast.success(bagId ? 'Item assigned to bag' : 'Item unassigned');
+    } catch (error) {
+        toast.error('Failed to assign bag');
+    }
+  };
+
+  const handleAssignOccasion = async (wardrobeItemId: string, occasionId: string) => {
+    if (!wardrobeItemId) return;
+    const isAssigned = outfitItems.some(oi => oi.occasionId === occasionId && oi.itemId === wardrobeItemId);
+    if (isAssigned) {
+        toast.info("Item is already in this occasion's outfit.");
+        return;
+    }
+    try {
+        const newOutfitItem = await outfitItemService.add({
+            occasionId: occasionId,
+            itemId: wardrobeItemId,
+        });
+        setOutfitItems([...outfitItems, newOutfitItem]);
+        toast.success('Item added to occasion outfit');
+    } catch (error) {
+        toast.error('Failed to add item to occasion');
+    }
+  };
+
+  const handleAssignCategory = async (wardrobeItemId: string, categoryId: string) => {
+    if (!wardrobeItemId) return;
+    try {
+        const updatedItem = await wardrobeService.update(wardrobeItemId, { category: categoryId });
+        setWardrobeItems(
+          wardrobeItems.map(item => item.id === wardrobeItemId ? updatedItem : item)
+        );
+        toast.success('Item category changed.');
+    } catch (error) {
+        toast.error('Failed to change category');
+    }
+  };
+
+  const handleUpdateItem = async (itemToUpdate: WardrobeItem, imageFile?: File) => {
+    if (!itemToUpdate) return;
+    try {
+      const updates: Partial<WardrobeItem> = {
+        name: itemToUpdate.name,
+        category: itemToUpdate.category,
+        tags: itemToUpdate.tags,
+        essential: itemToUpdate.essential,
+        notes: itemToUpdate.notes,
+        image: itemToUpdate.image,
+      };
+
+      if (imageFile) {
+        updates.image = await compressImage(imageFile);
+      }
+
+      const updatedItem = await wardrobeService.update(itemToUpdate.id, updates);
+
+      setWardrobeItems(
+        wardrobeItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
+      );
+      toast.success("Item updated successfully.");
+      setEditingItem(null);
+    } catch (error) {
+      toast.error("Failed to update item.");
     }
   };
 
@@ -135,10 +256,7 @@ export function PackingChecklist() {
   };
 
   const renderItemCard = (item: typeof tripItemsWithDetails[0]) => {
-    const itemOccasions = outfitItems
-      .filter(outfitItem => outfitItem.itemId === item.wardrobeItem?.id)
-      .map(outfitItem => occasions.find(occ => occ.id === outfitItem.occasionId))
-      .filter(Boolean);
+    const itemOccasions = occasionsByItemId.get(item.wardrobeItem?.id ?? '') || [];
 
     return (
       <Card key={item.id} className={`transition-all ${item.packed ? 'bg-green-50 dark:bg-green-950' : ''}`}>
@@ -223,14 +341,67 @@ export function PackingChecklist() {
                   )}
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteItem(item.id)}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 size={16} />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground">
+                      <MoreVertical size={16} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingItem(item.wardrobeItem!)}>
+                      <Edit size={14} className="mr-2" />
+                      Edit Item
+                    </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>Assign to Bag</DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          {bags.map(bag => (
+                            <DropdownMenuItem key={bag.id} onClick={() => handleAssignBag(item.id, bag.id)}>
+                              {bag.name}
+                            </DropdownMenuItem>
+                          ))}
+                          {item.bagId && (
+                            <DropdownMenuItem onClick={() => handleAssignBag(item.id, null)}>
+                              Unassign
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>Add to Occasion</DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          {occasions.map(occasion => (
+                            <DropdownMenuItem key={occasion.id} onClick={() => handleAssignOccasion(item.wardrobeItem!.id, occasion.id)}>
+                              {occasion.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>Change Category</DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          {categories.map(cat => (
+                            <DropdownMenuItem key={cat.id} onClick={() => handleAssignCategory(item.wardrobeItem!.id, cat.id)}>
+                              {cat.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => handleDeleteItem(item.id)}
+                    >
+                      <Trash2 size={14} className="mr-2" />
+                      Remove from Trip
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -291,12 +462,26 @@ export function PackingChecklist() {
         </CardContent>
       </Card>
 
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Button variant="outline" className="flex-1" onClick={() => setShowAddItemDialog(true)}>
+          <Plus size={16} className="mr-2" /> Add Items
+        </Button>
+        <Button variant="outline" className="flex-1" onClick={() => setShowCategoryManager(true)}>
+          <Settings size={16} className="mr-2" /> Manage Categories
+        </Button>
+      </div>
+
       {/* Items Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="category">By Category</TabsTrigger>
           <TabsTrigger value="bags">Bags ({bags.length})</TabsTrigger>
           <TabsTrigger value="occasions">Occasions ({occasions.length})</TabsTrigger>
+          <TabsTrigger value="repacking">
+            <RefreshCcw size={14} className="mr-1" />
+            Repack
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="category" className="space-y-4">
@@ -354,7 +539,36 @@ export function PackingChecklist() {
             tripItems={tripItems}
           />
         </TabsContent>
+
+        <TabsContent value="repacking" className="space-y-4">
+          <RepackingManager
+            tripId={currentTrip.id}
+            bags={bags}
+            tripItems={tripItems}
+            setTripItems={setTripItems}
+            wardrobeItems={wardrobeItems}
+            categories={categories}
+            updateTripItem={updateTripItem}
+          />
+        </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <AddItemToTripDialog
+        isOpen={showAddItemDialog}
+        onClose={() => setShowAddItemDialog(false)}
+        onAddItems={handleAddItemToTrip}
+      />
+      <CategoryManager
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+      />
+      <EditWardrobeItemDialog
+        isOpen={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        item={editingItem}
+        onSave={handleUpdateItem}
+      />
     </div>
   );
 }

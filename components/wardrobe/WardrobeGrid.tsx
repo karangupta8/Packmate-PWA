@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Search, Filter, Plus, Star, Edit2, Trash2, Package, Briefcase as Suitcase, Check, X } from 'lucide-react';
+import { Search, Filter, Plus, Star, Edit, Trash2, Package, Briefcase as Suitcase, Check, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,13 +12,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useStore } from '@/lib/store/useStore';
 import { AddItemForm } from './AddItemForm';
 import { TripSelectionDialog } from './TripSelectionDialog';
+import { EditWardrobeItemDialog } from './EditWardrobeItemDialog';
 import { wardrobeService } from '@/lib/db/services';
 import { WardrobeItem } from '@/lib/db/schema';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { compressImage } from '@/lib/db/database';
 
 export const WardrobeGrid = () => {
-  const { wardrobeItems, categories, removeWardrobeItem } = useStore();
+  const { wardrobeItems, categories, removeWardrobeItem, updateWardrobeItem } = useStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -30,6 +32,7 @@ export const WardrobeGrid = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showTripSelectionDialog, setShowTripSelectionDialog] = useState(false);
   const [itemsToAddToTrip, setItemsToAddToTrip] = useState<WardrobeItem[]>([]);
+  const [editingItem, setEditingItem] = useState<WardrobeItem | null>(null);
 
   const filteredItems = useMemo(() => {
     return wardrobeItems.filter(item => {
@@ -59,6 +62,33 @@ export const WardrobeGrid = () => {
       toast.error('Failed to remove item');
     }
     setDeleteItem(null);
+  };
+
+  const handleUpdateItem = async (itemToUpdate: WardrobeItem, imageFile?: File) => {
+    if (!itemToUpdate) return;
+    try {
+      const updates: Partial<WardrobeItem> = {
+        name: itemToUpdate.name,
+        category: itemToUpdate.category,
+        tags: itemToUpdate.tags,
+        essential: itemToUpdate.essential,
+        notes: itemToUpdate.notes,
+        image: itemToUpdate.image,
+      };
+
+      if (imageFile) {
+        updates.image = await compressImage(imageFile);
+      }
+
+      const updatedItem = await wardrobeService.update(itemToUpdate.id, updates);
+
+      updateWardrobeItem(updatedItem.id, updatedItem);
+      
+      toast.success("Item updated successfully.");
+      setEditingItem(null);
+    } catch (error) {
+      toast.error("Failed to update item.");
+    }
   };
 
   const handleToggleMultiSelect = () => {
@@ -276,6 +306,14 @@ export const WardrobeGrid = () => {
                   {!multiSelectMode && (
                     <div className="flex justify-end gap-1">
                       <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => setEditingItem(item)}
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button
                         variant="destructive"
                         size="icon"
                         className="h-8 w-8"
@@ -313,6 +351,14 @@ export const WardrobeGrid = () => {
         isOpen={showTripSelectionDialog}
         onClose={handleTripSelectionClose}
         itemsToAdd={itemsToAddToTrip}
+      />
+
+      {/* Edit Item Dialog */}
+      <EditWardrobeItemDialog
+        isOpen={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        item={editingItem}
+        onSave={handleUpdateItem}
       />
 
       {/* Delete Confirmation Dialog */}

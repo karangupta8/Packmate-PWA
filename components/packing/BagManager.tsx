@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Luggage, Edit2, Trash2, X, Package, Star, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,7 @@ export const BagManager = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'assign'>('overview');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedBag, setSelectedBag] = useState<Bag | null>(null);
+  const [editingBag, setEditingBag] = useState<Bag | null>(null);
   const [newBag, setNewBag] = useState({
     name: '',
     type: 'suitcase' as Bag['type'],
@@ -46,6 +47,12 @@ export const BagManager = ({
     maxWeight: '',
     notes: ''
   });
+
+  useEffect(() => {
+    if (editingBag) {
+      setShowCreateForm(false);
+    }
+  }, [editingBag]);
 
   // Get trip items with wardrobe details
   const tripItemsWithDetails = useMemo(() => {
@@ -85,6 +92,25 @@ export const BagManager = ({
       toast.success('Bag created');
     } catch (error) {
       toast.error('Failed to create bag');
+    }
+  };
+
+  const handleUpdateBag = async () => {
+    if (!editingBag || !editingBag.name.trim()) return;
+
+    try {
+      const updatedBag = await bagService.update(editingBag.id, {
+        name: editingBag.name.trim(),
+        type: editingBag.type,
+        color: editingBag.color,
+        maxWeight: editingBag.maxWeight ? Number(editingBag.maxWeight) : undefined,
+        notes: editingBag.notes?.trim() || undefined,
+      });
+      setBags(bags.map(b => b.id === updatedBag.id ? updatedBag : b));
+      setEditingBag(null);
+      toast.success('Bag updated');
+    } catch (error) {
+      toast.error('Failed to update bag');
     }
   };
 
@@ -321,52 +347,84 @@ export const BagManager = ({
                 
                 return (
                   <Card key={bag.id} className="cursor-pointer hover:bg-accent/50 transition-colors">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div 
-                          className="flex items-center gap-3 flex-1"
-                          onClick={() => setSelectedBag(bag)}
-                        >
-                          <div 
-                            className="w-4 h-4 rounded-full" 
-                            style={{ backgroundColor: bag.color }}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium">{bag.name}</h4>
-                              <Badge variant="outline" className="text-xs">
-                                {bagTypes.find(bt => bt.id === bag.type)?.name}
-                              </Badge>
+                    {editingBag?.id === bag.id ? (
+                      <CardContent className="p-4 space-y-4">
+                        <div className="space-y-3">
+                          <div>
+                            <Label htmlFor={`bag-name-${bag.id}`}>Bag Name</Label>
+                            <Input
+                              id={`bag-name-${bag.id}`}
+                              value={editingBag.name}
+                              onChange={(e) => setEditingBag({ ...editingBag, name: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <Label>Bag Type</Label>
+                            <Select value={editingBag.type} onValueChange={(value: Bag['type']) => setEditingBag({ ...editingBag, type: value })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {bagTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Color</Label>
+                            <div className="flex gap-2 mt-2">
+                              {bagColors.map((color) => (
+                                <button
+                                  key={color}
+                                  className={`w-8 h-8 rounded-full border-2 ${editingBag.color === color ? 'border-foreground' : 'border-transparent'}`}
+                                  style={{ backgroundColor: color }}
+                                  onClick={() => setEditingBag({ ...editingBag, color })}
+                                />
+                              ))}
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {bagItems.length} item{bagItems.length !== 1 ? 's' : ''} assigned
-                            </p>
-                            {bag.maxWeight && (
-                              <p className="text-xs text-muted-foreground">
-                                Max: {bag.maxWeight}kg
-                              </p>
-                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button onClick={handleUpdateBag} className="flex-1">Save</Button>
+                            <Button variant="outline" onClick={() => setEditingBag(null)}>Cancel</Button>
                           </div>
                         </div>
-                        
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                      </CardContent>
+                    ) : (
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div 
+                            className="flex items-start gap-3 flex-1 min-w-0"
                             onClick={() => setSelectedBag(bag)}
                           >
-                            <Edit2 size={14} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteBag(bag.id)}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                            <div 
+                              className="w-4 h-4 rounded-full mt-1 flex-shrink-0" 
+                              style={{ backgroundColor: bag.color }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium truncate">{bag.name}</h4>
+                                <Badge variant="outline" className="text-xs">
+                                  {bagTypes.find(bt => bt.id === bag.type)?.name}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {bagItems.length} item{bagItems.length !== 1 ? 's' : ''} assigned
+                              </p>
+                              {bagItems.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1 truncate">
+                                  {bagItems.slice(0, 3).map(({ item }) => item!.name).join(', ')}
+                                  {bagItems.length > 3 ? ` and ${bagItems.length - 3} more` : ''}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => setEditingBag(bag)}><Edit2 size={14} /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteBag(bag.id)}><Trash2 size={14} /></Button>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
+                      </CardContent>
+                    )}
                   </Card>
                 );
               })}

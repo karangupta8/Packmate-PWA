@@ -9,9 +9,9 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { tripService } from '@/lib/db/services';
@@ -25,6 +25,9 @@ const tripSchema = z.object({
   startDate: z.date({ invalid_type_error: 'Start date is required' }),
   endDate: z.date({ invalid_type_error: 'End date is required' }),
   type: z.enum(['Business', 'Vacation', 'Weekend', 'Other']),
+  description: z.string().max(200, 'Description must be under 200 characters').optional(),
+  travelers: z.coerce.number().int().min(1, 'Must have at least 1 traveler').optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
   isTemplate: z.boolean().default(false),
 }).refine((data) => data.endDate >= data.startDate, {
   message: "End date must be after start date",
@@ -34,14 +37,13 @@ const tripSchema = z.object({
 type TripFormData = z.infer<typeof tripSchema>;
 
 interface TripFormProps {
-  onClose: () => void;
   initialData?: Partial<TripFormData & { id: string }>;
   trip?: any;
   onSave?: (data: TripFormData) => Promise<void>;
   onCancel?: () => void;
 }
 
-export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripFormProps) => {
+export const TripForm = ({ initialData, trip, onSave, onCancel }: TripFormProps) => {
   const { addTrip, updateTrip, setLoading } = useStore();
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
@@ -57,6 +59,9 @@ export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripF
       startDate: tripData?.startDate ? new Date(tripData.startDate) : new Date(),
       endDate: tripData?.endDate ? new Date(tripData.endDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
       type: tripData?.type || 'Vacation',
+      description: tripData?.description || '',
+      travelers: tripData?.travelers || 1,
+      priority: tripData?.priority || 'medium',
       isTemplate: tripData?.isTemplate || false,
     },
   });
@@ -83,8 +88,6 @@ export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripF
       
       if (onCancel) {
         onCancel();
-      } else {
-        onClose();
       }
     } catch (error) {
       toast.error('Failed to save trip');
@@ -94,18 +97,8 @@ export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripF
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          {tripData?.id ? 'Edit Trip' : 'Create New Trip'}
-          <Button variant="ghost" size="icon" onClick={onCancel || onClose}>
-            <X size={20} />
-          </Button>
-        </CardTitle>
-      </CardHeader>
-
       <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
+        <div className="space-y-4">
           {/* Trip Name */}
           <div className="space-y-2">
             <Label htmlFor="name">Trip Name *</Label>
@@ -131,6 +124,20 @@ export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripF
             />
             {errors.destination && (
               <p className="text-sm text-destructive">{errors.destination.message}</p>
+            )}
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              {...register('description')}
+              placeholder="e.g., Family trip to see the sights"
+              className={errors.description ? 'border-destructive' : ''}
+            />
+            {errors.description && (
+              <p className="text-sm text-destructive">{errors.description.message}</p>
             )}
           </div>
 
@@ -216,21 +223,55 @@ export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripF
             </div>
           </div>
 
-          {/* Trip Type */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Trip Type */}
+            <div className="space-y-2">
+              <Label>Trip Type</Label>
+              <Select 
+                defaultValue={tripData?.type || 'Vacation'} 
+                onValueChange={(value: 'Business' | 'Vacation' | 'Weekend' | 'Other') => setValue('type', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Vacation">Vacation</SelectItem>
+                  <SelectItem value="Business">Business</SelectItem>
+                  <SelectItem value="Weekend">Weekend</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Travelers */}
+            <div className="space-y-2">
+              <Label htmlFor="travelers">Travelers</Label>
+              <Input
+                id="travelers"
+                type="number"
+                min="1"
+                {...register('travelers')}
+                className={errors.travelers ? 'border-destructive' : ''}
+              />
+              {errors.travelers && (
+                <p className="text-sm text-destructive">{errors.travelers.message}</p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label>Trip Type</Label>
-            <Select 
-              defaultValue={initialData?.type || 'Vacation'} 
-              onValueChange={(value: 'Business' | 'Vacation' | 'Weekend' | 'Other') => setValue('type', value)}
+            <Label>Priority</Label>
+            <Select
+              defaultValue={tripData?.priority || 'medium'}
+              onValueChange={(value: 'low' | 'medium' | 'high') => setValue('priority', value)}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Vacation">Vacation</SelectItem>
-                <SelectItem value="Business">Business</SelectItem>
-                <SelectItem value="Weekend">Weekend</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -246,17 +287,16 @@ export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripF
               Save as reusable template
             </Label>
           </div>
-        </CardContent>
+        </div>
 
-        <CardFooter className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onCancel || onClose} className="flex-1">
+        <div className="flex gap-2 pt-6">
+          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
             Cancel
           </Button>
           <Button type="submit" className="flex-1">
             {tripData?.id ? 'Update' : 'Create'} Trip
           </Button>
-        </CardFooter>
+        </div>
       </form>
-    </Card>
   );
 };
