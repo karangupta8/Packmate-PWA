@@ -16,7 +16,7 @@ import { tripService, tripItemService, occasionService, bagService, outfitItemSe
 import { Trip, WardrobeItem, TripItem } from '@/lib/db/schema';
 
 // Helper function to determine trip status
-const getTripStatus = (trip: any) => {
+const getTripStatus = (trip: Trip) => {
   const now = new Date();
   const startDate = new Date(trip.startDate);
   const endDate = new Date(trip.endDate);
@@ -44,7 +44,7 @@ export const TripsList = () => {
   } = useStore();
   
   const [showTripForm, setShowTripForm] = useState(false);
-  const [editingTrip, setEditingTrip] = useState<any>(null);
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -102,7 +102,7 @@ export const TripsList = () => {
     setShowTripForm(true);
   };
 
-  const handleEditTrip = (trip: any) => {
+  const handleEditTrip = (trip: Trip) => {
     setEditingTrip(trip);
     setShowTripForm(true);
   };
@@ -115,6 +115,7 @@ export const TripsList = () => {
     try {
       await tripService.delete(tripId);
       setTrips(trips.filter(trip => trip.id !== tripId));
+      setTripItems(tripItems.filter(item => item.tripId !== tripId));
       
       if (currentTrip?.id === tripId) {
         setCurrentTrip(null);
@@ -126,12 +127,12 @@ export const TripsList = () => {
     }
   };
 
-  const handleSelectTrip = (trip: any) => {
+  const handleSelectTrip = (trip: Trip) => {
     setCurrentTrip(trip);
     setActiveTab('packing');
   };
 
-  const handleExportTrip = async (trip: any) => {
+  const handleExportTrip = async (trip: Trip) => {
     try {
       // Get all trip data
       const [tripItemsData, occasionsData, bagsData] = await Promise.all([
@@ -348,7 +349,7 @@ export const TripsList = () => {
       </div>
 
       {/* Trips Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
         {filteredTrips.map((trip) => {
           const { status, variant } = getTripStatus(trip);
           const stats = tripStats.get(trip.id) || { itemCount: 0, packedCount: 0 };
@@ -362,8 +363,8 @@ export const TripsList = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{trip.name}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
+                    <CardTitle className="text-lg break-words">{trip.name}</CardTitle>
+                    <div className="flex items-center gap-2 mt-1 min-w-0">
                       <MapPin size={14} className="text-muted-foreground" />
                       <span className="text-sm text-muted-foreground truncate">
                         {trip.destination}
@@ -410,7 +411,7 @@ export const TripsList = () => {
               </CardHeader>
               
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar size={14} />
                     <span>{new Date(trip.startDate).toLocaleDateString()}</span>

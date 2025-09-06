@@ -142,7 +142,7 @@ export const HomePage = () => {
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Camera className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="font-semibold">1. Catalog Your Wardrobe</h3>
+                  <h3 className="font-semibold break-words">1. Catalog Your Wardrobe</h3>
                 </div>
                 <p className="text-sm text-muted-foreground ml-14">
                   Take photos of your clothes and accessories, add details like brand, color, and occasion. Build a complete digital wardrobe.
@@ -154,7 +154,7 @@ export const HomePage = () => {
                   <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Suitcase className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="font-semibold">2. Plan Your Trips</h3>
+                  <h3 className="font-semibold break-words">2. Plan Your Trips</h3>
                 </div>
                 <p className="text-sm text-muted-foreground ml-14">
                   Create trips with destinations, dates, and activities. PackMate suggests items based on weather, occasion, and duration.
@@ -166,7 +166,7 @@ export const HomePage = () => {
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Package className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="font-semibold">3. Smart Packing</h3>
+                  <h3 className="font-semibold break-words">3. Smart Packing</h3>
                 </div>
                 <p className="text-sm text-muted-foreground ml-14">
                   Get intelligent packing suggestions, create virtual bags, and track what you've packed vs. what you need.
@@ -178,7 +178,7 @@ export const HomePage = () => {
                   <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center flex-shrink-0">
                     <CheckCircle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <h3 className="font-semibold">4. Track & Return</h3>
+                  <h3 className="font-semibold break-words">4. Track & Return</h3>
                 </div>
                 <p className="text-sm text-muted-foreground ml-14">
                   Mark items as packed, track usage during your trip, and easily return items to your wardrobe when you get back.
@@ -257,55 +257,49 @@ export const HomePage = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Total Items</p>
-                <p className="text-2xl font-bold">{stats.totalItems}</p>
+
               </div>
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Shirt className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
+              <p className="text-3xl font-bold">{stats.totalItems}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Essentials</p>
-                <p className="text-2xl font-bold">{stats.essentialItems}</p>
+
               </div>
-              <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Star className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-              </div>
+              <p className="text-3xl font-bold">{stats.essentialItems}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Active Trips</p>
-                <p className="text-2xl font-bold">{stats.activeTrips}</p>
+
               </div>
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Suitcase className="w-8 h-8 text-green-600 dark:text-green-400" />
-              </div>
+              <p className="text-3xl font-bold">{stats.activeTrips}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Templates</p>
-                <p className="text-2xl font-bold">{stats.templates}</p>
+
               </div>
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              <div>
+              <p className="text-3xl font-bold">{stats.templates}</p>
               </div>
             </div>
           </CardContent>
@@ -318,7 +312,7 @@ export const HomePage = () => {
           <CardTitle className="text-lg">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button 
               variant="outline" 
               className="h-auto p-6 flex flex-col items-center gap-3 hover:shadow-md transition-shadow"
@@ -393,16 +387,16 @@ export const HomePage = () => {
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div>
-                    <h4 className="font-medium">{trip.name}</h4>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{trip.name}</h4>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{format(new Date(trip.startDate), 'MMM dd')}</span>
                       {trip.destination && (
                         <>
                           <span>•</span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 min-w-0">
                             <MapPin className="w-3 h-3" />
-                            <span>{trip.destination}</span>
+                            <span className="truncate">{trip.destination}</span>
                           </div>
                         </>
                       )}
@@ -425,7 +419,7 @@ export const HomePage = () => {
             <p className="text-muted-foreground mb-4">
               Begin by adding items to your wardrobe, then create your first trip to experience smart packing
             </p>
-            <div className="flex gap-2 justify-center">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button onClick={() => handleQuickAction('add-item')}>
                 <Plus className="w-4 h-4 mr-1" />
                 Add First Item
@@ -452,16 +446,16 @@ export const HomePage = () => {
                   <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Suitcase className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                   </div>
-                  <div>
-                    <h4 className="font-medium">{trip.name}</h4>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate">{trip.name}</h4>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{format(new Date(trip.endDate), 'MMM dd, yyyy')}</span>
                       {trip.destination && (
                         <>
                           <span>•</span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 min-w-0">
                             <MapPin className="w-3 h-3" />
-                            <span>{trip.destination}</span>
+                            <span className="truncate">{trip.destination}</span>
                           </div>
                         </>
                       )}
