@@ -36,22 +36,28 @@ type TripFormData = z.infer<typeof tripSchema>;
 interface TripFormProps {
   onClose: () => void;
   initialData?: Partial<TripFormData & { id: string }>;
+  trip?: any;
+  onSave?: (data: TripFormData) => Promise<void>;
+  onCancel?: () => void;
 }
 
-export const TripForm = ({ onClose, initialData }: TripFormProps) => {
+export const TripForm = ({ onClose, initialData, trip, onSave, onCancel }: TripFormProps) => {
   const { addTrip, updateTrip, setLoading } = useStore();
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
 
+  // Use either initialData or trip for backwards compatibility
+  const tripData = initialData || trip;
+
   const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm<TripFormData>({
     resolver: zodResolver(tripSchema),
     defaultValues: {
-      name: initialData?.name || '',
-      destination: initialData?.destination || '',
-      startDate: initialData?.startDate ? new Date(initialData.startDate) : new Date(),
-      endDate: initialData?.endDate ? new Date(initialData.endDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
-      type: initialData?.type || 'Vacation',
-      isTemplate: initialData?.isTemplate || false,
+      name: tripData?.name || '',
+      destination: tripData?.destination || '',
+      startDate: tripData?.startDate ? new Date(tripData.startDate) : new Date(),
+      endDate: tripData?.endDate ? new Date(tripData.endDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+      type: tripData?.type || 'Vacation',
+      isTemplate: tripData?.isTemplate || false,
     },
   });
 
@@ -62,9 +68,12 @@ export const TripForm = ({ onClose, initialData }: TripFormProps) => {
     try {
       setLoading(true);
       
-      if (initialData?.id) {
-        const updatedTrip = await tripService.update(initialData.id, data);
-        updateTrip(initialData.id, updatedTrip);
+      // Use custom onSave if provided, otherwise use default logic
+      if (onSave) {
+        await onSave(data);
+      } else if (tripData?.id) {
+        const updatedTrip = await tripService.update(tripData.id, data);
+        updateTrip(tripData.id, updatedTrip);
         toast.success('Trip updated');
       } else {
         const trip = await tripService.add(data);
@@ -72,7 +81,11 @@ export const TripForm = ({ onClose, initialData }: TripFormProps) => {
         toast.success('Trip created');
       }
       
-      onClose();
+      if (onCancel) {
+        onCancel();
+      } else {
+        onClose();
+      }
     } catch (error) {
       toast.error('Failed to save trip');
     } finally {
@@ -84,8 +97,8 @@ export const TripForm = ({ onClose, initialData }: TripFormProps) => {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          {initialData?.id ? 'Edit Trip' : 'Create New Trip'}
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          {tripData?.id ? 'Edit Trip' : 'Create New Trip'}
+          <Button variant="ghost" size="icon" onClick={onCancel || onClose}>
             <X size={20} />
           </Button>
         </CardTitle>
@@ -226,7 +239,7 @@ export const TripForm = ({ onClose, initialData }: TripFormProps) => {
           <div className="flex items-center space-x-2">
             <Checkbox
               id="isTemplate"
-              defaultChecked={initialData?.isTemplate}
+              defaultChecked={tripData?.isTemplate}
               onCheckedChange={(checked) => setValue('isTemplate', checked as boolean)}
             />
             <Label htmlFor="isTemplate" className="cursor-pointer">
@@ -236,11 +249,11 @@ export const TripForm = ({ onClose, initialData }: TripFormProps) => {
         </CardContent>
 
         <CardFooter className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+          <Button type="button" variant="outline" onClick={onCancel || onClose} className="flex-1">
             Cancel
           </Button>
           <Button type="submit" className="flex-1">
-            {initialData?.id ? 'Update' : 'Create'} Trip
+            {tripData?.id ? 'Update' : 'Create'} Trip
           </Button>
         </CardFooter>
       </form>

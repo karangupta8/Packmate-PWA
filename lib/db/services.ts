@@ -1,5 +1,5 @@
 import { getDB, compressImage } from './database';
-import { WardrobeItem, Trip, TripItem, Category } from './schema';
+import { WardrobeItem, Trip, TripItem, Category, PackingCategory, Occasion, OutfitItem, Bag, defaultPackingCategories } from './schema';
 
 // Wardrobe Items Service
 export const wardrobeService = {
@@ -167,9 +167,10 @@ export const tripItemService = {
   async updatePacked(id: string, packed: boolean): Promise<void> {
     const db = await getDB();
     const existing = await db.get('tripItems', id);
-    if (existing) {
-      await db.put('tripItems', { ...existing, packed });
-    }
+    if (!existing) throw new Error('Trip item not found');
+    
+    const updated = { ...existing, packed };
+    await db.put('tripItems', updated);
   },
 
   async delete(id: string): Promise<void> {
@@ -177,6 +178,18 @@ export const tripItemService = {
     await db.delete('tripItems', id);
   },
 
+  async update(id: string, updates: Partial<TripItem>): Promise<TripItem> {
+    const db = await getDB();
+    const existing = await db.get('tripItems', id);
+    if (!existing) throw new Error('Trip item not found');
+    
+    const updated: TripItem = {
+      ...existing,
+      ...updates,
+    };
+    await db.put('tripItems', updated);
+    return updated;
+  },
   async deleteByTripId(tripId: string): Promise<void> {
     const tripItems = await this.getByTripId(tripId);
     const db = await getDB();
@@ -218,6 +231,31 @@ export const categoryService = {
   async getById(id: string): Promise<Category | undefined> {
     const db = await getDB();
     return db.get('categories', id);
+  },
+
+  async add(category: Omit<Category, 'id'>): Promise<Category> {
+    const db = await getDB();
+    const newCategory: Category = {
+      ...category,
+      id: crypto.randomUUID(),
+    };
+    await db.add('categories', newCategory);
+    return newCategory;
+  },
+
+  async update(id: string, updates: Partial<Category>): Promise<Category> {
+    const db = await getDB();
+    const existing = await db.get('categories', id);
+    if (!existing) throw new Error('Category not found');
+    
+    const updated: Category = { ...existing, ...updates };
+    await db.put('categories', updated);
+    return updated;
+  },
+
+  async delete(id: string): Promise<void> {
+    const db = await getDB();
+    await db.delete('categories', id);
   }
 };
 
@@ -234,3 +272,108 @@ export const settingsService = {
     await db.put('settings', { key, value });
   }
 };
+
+// Occasions Service
+export const occasionService = {
+  async getByTripId(tripId: string): Promise<Occasion[]> {
+    const db = await getDB();
+    return db.getAllFromIndex('occasions', 'by-trip', tripId);
+  },
+
+  async add(occasion: Omit<Occasion, 'id' | 'createdAt'>): Promise<Occasion> {
+    const db = await getDB();
+    const newOccasion: Occasion = {
+      ...occasion,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+    };
+    await db.add('occasions', newOccasion);
+    return newOccasion;
+  },
+
+  async update(id: string, updates: Partial<Occasion>): Promise<Occasion> {
+    const db = await getDB();
+    const existing = await db.get('occasions', id);
+    if (!existing) throw new Error('Occasion not found');
+    
+    const updated: Occasion = { ...existing, ...updates };
+    await db.put('occasions', updated);
+    return updated;
+  },
+
+  async delete(id: string): Promise<void> {
+    const db = await getDB();
+    await db.delete('occasions', id);
+    // Also delete all outfit items for this occasion
+    await outfitItemService.deleteByOccasionId(id);
+  }
+};
+
+// Outfit Items Service
+export const outfitItemService = {
+  async getByOccasionId(occasionId: string): Promise<OutfitItem[]> {
+    const db = await getDB();
+    return db.getAllFromIndex('outfitItems', 'by-occasion', occasionId);
+  },
+
+  async add(outfitItem: Omit<OutfitItem, 'id' | 'addedAt'>): Promise<OutfitItem> {
+    const db = await getDB();
+    const newOutfitItem: OutfitItem = {
+      ...outfitItem,
+      id: crypto.randomUUID(),
+      addedAt: new Date(),
+    };
+    await db.add('outfitItems', newOutfitItem);
+    return newOutfitItem;
+  },
+
+  async delete(id: string): Promise<void> {
+    const db = await getDB();
+    await db.delete('outfitItems', id);
+  },
+
+  async deleteByOccasionId(occasionId: string): Promise<void> {
+    const outfitItems = await this.getByOccasionId(occasionId);
+    const db = await getDB();
+    const tx = db.transaction('outfitItems', 'readwrite');
+    
+    await Promise.all(
+      outfitItems.map(item => tx.store.delete(item.id))
+    );
+    await tx.done;
+  }
+};
+
+// Bags Service
+export const bagService = {
+  async getByTripId(tripId: string): Promise<Bag[]> {
+    const db = await getDB();
+    return db.getAllFromIndex('bags', 'by-trip', tripId);
+  },
+
+  async add(bag: Omit<Bag, 'id' | 'createdAt'>): Promise<Bag> {
+    const db = await getDB();
+    const newBag: Bag = {
+      ...bag,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+    };
+    await db.add('bags', newBag);
+    return newBag;
+  },
+
+  async update(id: string, updates: Partial<Bag>): Promise<Bag> {
+    const db = await getDB();
+    const existing = await db.get('bags', id);
+    if (!existing) throw new Error('Bag not found');
+    
+    const updated: Bag = { ...existing, ...updates };
+    await db.put('bags', updated);
+    return updated;
+  },
+
+  async delete(id: string): Promise<void> {
+    const db = await getDB();
+    await db.delete('bags', id);
+  }
+}

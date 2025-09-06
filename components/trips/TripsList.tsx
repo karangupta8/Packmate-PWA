@@ -1,261 +1,490 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, Copy, Edit2, Trash2, Briefcase as Suitcase, Star } from 'lucide-react';
-import { format } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Calendar, MapPin, Users, Star, Package, Search, Filter, MoreVertical, Edit, Trash2, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useStore } from '@/lib/store/useStore';
 import { TripForm } from './TripForm';
-import { tripService, tripItemService } from '@/lib/db/services';
 import { toast } from 'sonner';
-import { Trip } from '@/lib/db/schema';
+import { tripService, tripItemService, occasionService, bagService, outfitItemService } from '@/lib/db/services';
+
+// Helper function to determine trip status
+const getTripStatus = (trip: any) => {
+  const now = new Date();
+  const startDate = new Date(trip.startDate);
+  const endDate = new Date(trip.endDate);
+  
+  if (now < startDate) {
+    return { status: 'Upcoming', variant: 'secondary' as const };
+  } else if (now >= startDate && now <= endDate) {
+    return { status: 'Active', variant: 'default' as const };
+  } else {
+    return { status: 'Completed', variant: 'outline' as const };
+  }
+};
 
 export const TripsList = () => {
-  const { trips, removeTrip, addTrip, setCurrentTrip, setActiveTab } = useStore();
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const [deleteTrip, setDeleteTrip] = useState<string | null>(null);
-  const [duplicateTrip, setDuplicateTrip] = useState<Trip | null>(null);
-  const [duplicateName, setDuplicateName] = useState('');
-  const [tripProgress, setTripProgress] = useState<Record<string, { total: number; packed: number }>>({});
+  const { 
+    trips, 
+    setTrips, 
+    currentTrip, 
+    setCurrentTrip, 
+    setActiveTab,
+    tripItems,
+    wardrobeItems 
+  } = useStore();
+  
+  const [showTripForm, setShowTripForm] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   useEffect(() => {
-    // Load progress for all trips
-    const loadProgress = async () => {
-      const progress: Record<string, { total: number; packed: number }> = {};
-      for (const trip of trips) {
-        progress[trip.id] = await tripItemService.getTripProgress(trip.id);
-      }
-      setTripProgress(progress);
-    };
-    loadProgress();
-  }, [trips]);
+    loadTrips();
+  }, []);
 
-  const handleDeleteTrip = async (id: string) => {
+  const loadTrips = async () => {
     try {
-      await tripService.delete(id);
-      removeTrip(id);
-      toast.success('Trip deleted');
+      const tripsData = await tripService.getAll();
+      setTrips(tripsData);
+    } catch (error) {
+      toast.error('Failed to load trips');
+    }
+  };
+
+  const filteredTrips = useMemo(() => {
+    return trips.filter(trip => {
+      const matchesSearch = trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           trip.destination.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      if (statusFilter === 'all') return true;
+      
+      const { status } = getTripStatus(trip);
+      return status.toLowerCase() === statusFilter;
+    });
+  }, [trips, searchQuery, statusFilter]);
+
+  const handleCreateTrip = () => {
+    setEditingTrip(null);
+    setShowTripForm(true);
+  };
+
+  const handleEditTrip = (trip: any) => {
+    setEditingTrip(trip);
+    setShowTripForm(true);
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    if (!confirm('Are you sure you want to delete this trip? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await tripService.delete(tripId);
+      setTrips(trips.filter(trip => trip.id !== tripId));
+      
+      if (currentTrip?.id === tripId) {
+        setCurrentTrip(null);
+      }
+      
+      toast.success('Trip deleted successfully');
     } catch (error) {
       toast.error('Failed to delete trip');
     }
-    setDeleteTrip(null);
   };
 
-  const handleDuplicateTrip = async () => {
-    if (!duplicateTrip || !duplicateName.trim()) return;
-    
-    try {
-      const newTrip = await tripService.duplicate(duplicateTrip.id, duplicateName);
-      addTrip(newTrip);
-      toast.success('Trip duplicated');
-      setDuplicateTrip(null);
-      setDuplicateName('');
-    } catch (error) {
-      toast.error('Failed to duplicate trip');
-    }
-  };
-
-  const handleViewPacking = (trip: Trip) => {
+  const handleSelectTrip = (trip: any) => {
     setCurrentTrip(trip);
     setActiveTab('packing');
   };
 
-  const sortedTrips = trips.sort((a, b) => {
-    if (a.isTemplate !== b.isTemplate) {
-      return a.isTemplate ? 1 : -1; // Templates last
+  const handleExportTrip = async (trip: any) => {
+    try {
+      // Get all trip data
+      const [tripItemsData, occasionsData, bagsData] = await Promise.all([
+        tripItemService.getByTripId(trip.id),
+        occasionService.getByTripId(trip.id),
+        bagService.getByTripId(trip.id)
+      ]);
+
+      // Get outfit items for all occasions
+      const allOutfitItems = [];
+      for (const occasion of occasionsData) {
+        const items = await outfitItemService.getByOccasionId(occasion.id);
+        allOutfitItems.push(...items);
+      }
+
+      // Get wardrobe items for this trip
+      const tripWardrobeItems = wardrobeItems.filter(item => 
+        tripItemsData.some(ti => ti.itemId === item.id)
+      );
+
+      const exportData = {
+        trip,
+        tripItems: tripItemsData,
+        wardrobeItems: tripWardrobeItems,
+        occasions: occasionsData,
+        outfitItems: allOutfitItems,
+        bags: bagsData,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${trip.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Trip exported successfully');
+    } catch (error) {
+      toast.error('Failed to export trip');
     }
-    return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-  });
+  };
 
-  if (showCreateForm) {
-    return <TripForm onClose={() => setShowCreateForm(false)} />;
-  }
+  const handleImportTrip = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  if (editingTrip) {
-    return (
-      <TripForm 
-        onClose={() => setEditingTrip(null)} 
-        initialData={editingTrip}
-      />
-    );
-  }
+    try {
+      const text = await file.text();
+      const importData = JSON.parse(text);
+
+      // Validate import data structure
+      if (!importData.trip || !importData.wardrobeItems) {
+        throw new Error('Invalid import file format');
+      }
+
+      // Create new trip
+      const newTrip = await tripService.add({
+        ...importData.trip,
+        id: undefined, // Let database generate new ID
+        name: `${importData.trip.name} (Imported)`
+      });
+
+      // Import wardrobe items
+      const wardrobeItemMap = new Map();
+      for (const item of importData.wardrobeItems) {
+        const newItem = await wardrobeService.add({
+          ...item,
+          id: undefined
+        });
+        wardrobeItemMap.set(item.id, newItem.id);
+      }
+
+      // Import trip items
+      if (importData.tripItems) {
+        for (const tripItem of importData.tripItems) {
+          const newItemId = wardrobeItemMap.get(tripItem.itemId);
+          if (newItemId) {
+            await tripItemService.add({
+              ...tripItem,
+              id: undefined,
+              tripId: newTrip.id,
+              itemId: newItemId
+            });
+          }
+        }
+      }
+
+      // Import occasions and outfit items
+      if (importData.occasions) {
+        for (const occasion of importData.occasions) {
+          const newOccasion = await occasionService.add({
+            ...occasion,
+            id: undefined,
+            tripId: newTrip.id
+          });
+
+          // Import outfit items for this occasion
+          if (importData.outfitItems) {
+            const occasionOutfitItems = importData.outfitItems.filter(
+              (oi: any) => oi.occasionId === occasion.id
+            );
+            
+            for (const outfitItem of occasionOutfitItems) {
+              const newItemId = wardrobeItemMap.get(outfitItem.itemId);
+              if (newItemId) {
+                await outfitItemService.add({
+                  ...outfitItem,
+                  id: undefined,
+                  occasionId: newOccasion.id,
+                  itemId: newItemId
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // Import bags
+      if (importData.bags) {
+        for (const bag of importData.bags) {
+          await bagService.add({
+            ...bag,
+            id: undefined,
+            tripId: newTrip.id
+          });
+        }
+      }
+
+      await loadTrips();
+      toast.success('Trip imported successfully');
+      setShowImportDialog(false);
+    } catch (error) {
+      toast.error('Failed to import trip. Please check the file format.');
+    }
+
+    // Reset file input
+    event.target.value = '';
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Create Trip Button */}
-      <Button onClick={() => setShowCreateForm(true)} className="w-full">
-        <Plus size={18} className="mr-2" />
-        Create New Trip
-      </Button>
-
-      {/* Trips List */}
-      {sortedTrips.length > 0 ? (
-        <div className="space-y-3 pb-20">
-          {sortedTrips.map((trip) => {
-            const progress = tripProgress[trip.id] || { total: 0, packed: 0 };
-            const progressPercent = progress.total > 0 ? (progress.packed / progress.total) * 100 : 0;
-            
-            return (
-              <Card key={trip.id} className="relative">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {trip.name}
-                        {trip.isTemplate && (
-                          <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                        )}
-                      </CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          {format(trip.startDate, 'MMM dd')} - {format(trip.endDate, 'MMM dd')}
-                        </div>
-                        {trip.destination && (
-                          <div className="flex items-center gap-1">
-                            <MapPin size={14} />
-                            {trip.destination}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="shrink-0">
-                      {trip.type}
-                    </Badge>
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  {/* Progress Bar */}
-                  {progress.total > 0 && (
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Packing Progress</span>
-                        <span>{progress.packed}/{progress.total}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleViewPacking(trip)}
-                    >
-                      <Suitcase size={14} className="mr-1" />
-                      {progress.total > 0 ? 'Continue Packing' : 'Start Packing'}
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setEditingTrip(trip)}
-                    >
-                      <Edit2 size={14} />
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        setDuplicateTrip(trip);
-                        setDuplicateName(`${trip.name} (Copy)`);
-                      }}
-                    >
-                      <Copy size={14} />
-                    </Button>
-                    
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => setDeleteTrip(trip.id)}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <Suitcase size={48} className="mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No trips yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Create your first trip to start planning your packing
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">My Trips</h2>
+          <p className="text-muted-foreground">
+            Plan and organize your travel adventures
           </p>
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus size={18} className="mr-2" />
-            Create First Trip
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+            <Upload size={16} className="mr-2" />
+            Import
           </Button>
+          <Button onClick={handleCreateTrip}>
+            <Plus size={16} className="mr-2" />
+            New Trip
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search trips..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <Filter size={16} className="mr-2" />
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Trips</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Trips Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTrips.map((trip) => {
+          const { status, variant } = getTripStatus(trip);
+          const tripItemCount = tripItems.filter(item => item.tripId === trip.id).length;
+          const packedCount = tripItems.filter(item => item.tripId === trip.id && item.packed).length;
+          
+          return (
+            <Card 
+              key={trip.id} 
+              className="cursor-pointer hover:shadow-lg transition-shadow group"
+              onClick={() => handleSelectTrip(trip)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate">{trip.name}</CardTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <MapPin size={14} className="text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground truncate">
+                        {trip.destination}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={variant}>{status}</Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditTrip(trip);
+                        }}>
+                          <Edit size={14} className="mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportTrip(trip);
+                        }}>
+                          <Download size={14} className="mr-2" />
+                          Export
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTrip(trip.id);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 size={14} className="mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Calendar size={14} />
+                    <span>{new Date(trip.startDate).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users size={14} />
+                    <span>{trip.travelers}</span>
+                  </div>
+                </div>
+
+                {trip.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {trip.description}
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Packing Progress</span>
+                    <span>{tripItemCount > 0 ? `${packedCount}/${tripItemCount}` : '0/0'}</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: tripItemCount > 0 ? `${(packedCount / tripItemCount) * 100}%` : '0%' 
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2">
+                    <Package size={14} className="text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {tripItemCount} items
+                    </span>
+                  </div>
+                  {trip.priority === 'high' && (
+                    <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {filteredTrips.length === 0 && (
+        <div className="text-center py-12">
+          <Package size={48} className="mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">
+            {trips.length === 0 ? 'No trips yet' : 'No trips found'}
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            {trips.length === 0 
+              ? 'Create your first trip to start planning your adventure'
+              : 'Try adjusting your search or filter criteria'
+            }
+          </p>
+          {trips.length === 0 && (
+            <Button onClick={handleCreateTrip}>
+              <Plus size={18} className="mr-2" />
+              Create Your First Trip
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deleteTrip} onOpenChange={() => setDeleteTrip(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Trip</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this trip? This action cannot be undone and will remove all packing items.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTrip && handleDeleteTrip(deleteTrip)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Duplicate Dialog */}
-      <Dialog open={!!duplicateTrip} onOpenChange={() => setDuplicateTrip(null)}>
-        <DialogContent>
+      {/* Trip Form Dialog */}
+      <Dialog open={showTripForm} onOpenChange={setShowTripForm}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Duplicate Trip</DialogTitle>
+            <DialogTitle>
+              {editingTrip ? 'Edit Trip' : 'Create New Trip'}
+            </DialogTitle>
+          </DialogHeader>
+          <TripForm
+            trip={editingTrip}
+            onSave={async (tripData) => {
+              try {
+                if (editingTrip) {
+                  const updatedTrip = await tripService.update(editingTrip.id, tripData);
+                  setTrips(trips.map(trip => 
+                    trip.id === editingTrip.id ? updatedTrip : trip
+                  ));
+                  toast.success('Trip updated successfully');
+                } else {
+                  const newTrip = await tripService.add(tripData);
+                  setTrips([...trips, newTrip]);
+                  toast.success('Trip created successfully');
+                }
+                setShowTripForm(false);
+              } catch (error) {
+                toast.error(editingTrip ? 'Failed to update trip' : 'Failed to create trip');
+              }
+            }}
+            onCancel={() => setShowTripForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Trip</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="duplicate-name">New Trip Name</Label>
-              <Input
-                id="duplicate-name"
-                value={duplicateName}
-                onChange={(e) => setDuplicateName(e.target.value)}
-                placeholder="Enter new trip name"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setDuplicateTrip(null)} className="flex-1">
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleDuplicateTrip} 
-                className="flex-1"
-                disabled={!duplicateName.trim()}
-              >
-                Duplicate Trip
-              </Button>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Select a trip export file to import. This will create a new trip with all associated data.
+            </p>
+            <Input
+              type="file"
+              accept=".json"
+              onChange={handleImportTrip}
+              className="cursor-pointer"
+            />
           </div>
         </DialogContent>
       </Dialog>

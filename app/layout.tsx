@@ -2,7 +2,6 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
-import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,7 +26,6 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         {children}
-        <ServiceWorkerRegistration />
         <Toaster 
           position="top-center"
           toastOptions={{

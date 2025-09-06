@@ -65,7 +65,38 @@ export interface TripItem {
   itemId: string;
   packed: boolean;
   essential: boolean;
+  categoryId?: string;
+  bagId?: string;
   addedAt: Date;
+}
+
+export interface Occasion {
+  id: string;
+  tripId: string;
+  name: string;
+  description?: string;
+  date?: Date;
+  icon: string;
+  color: string;
+  createdAt: Date;
+}
+
+export interface OutfitItem {
+  id: string;
+  occasionId: string;
+  itemId: string;
+  addedAt: Date;
+}
+
+export interface Bag {
+  id: string;
+  tripId: string;
+  name: string;
+  type: 'carry-on' | 'suitcase' | 'backpack' | 'duffel' | 'tote' | 'other';
+  color: string;
+  maxWeight?: number;
+  notes?: string;
+  createdAt: Date;
 }
 
 export interface Category {
@@ -83,4 +114,13 @@ export const defaultCategories: Category[] = [
   { id: 'electronics', name: 'Electronics', icon: 'Smartphone', color: '#ef4444' },
   { id: 'toiletries', name: 'Toiletries', icon: 'Droplets', color: '#06b6d4' },
   { id: 'other', name: 'Other', icon: 'Package', color: '#6b7280' },
+];
+
+export const bagTypes = [
+  { id: 'carry-on', name: 'Carry-On', icon: 'Briefcase' },
+  { id: 'suitcase', name: 'Suitcase', icon: 'Package' },
+  { id: 'backpack', name: 'Backpack', icon: 'Backpack' },
+  { id: 'duffel', name: 'Duffel Bag', icon: 'Package2' },
+  { id: 'tote', name: 'Tote Bag', icon: 'ShoppingBag' },
+  { id: 'other', name: 'Other', icon: 'Luggage' },
 ];

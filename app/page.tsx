@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Navigation } from '@/components/layout/Navigation';
+import { HomePage } from '@/components/home/HomePage';
 import { WardrobeGrid } from '@/components/wardrobe/WardrobeGrid';
 import { TripsList } from '@/components/trips/TripsList';
 import { PackingChecklist } from '@/components/packing/PackingChecklist';
@@ -82,6 +83,8 @@ export default function Home() {
 
   const renderActiveTab = () => {
     switch (activeTab) {
+      case 'home':
+        return <HomePage />;
       case 'wardrobe':
         return <WardrobeGrid />;
       case 'trips':
@@ -89,7 +92,7 @@ export default function Home() {
       case 'packing':
         return <PackingChecklist />;
       default:
-        return <WardrobeGrid />;
+        return <HomePage />;
     }
   };
 

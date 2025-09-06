@@ -5,7 +5,7 @@ import { WardrobeItem, Trip, TripItem, Category } from '../db/schema';
 
 interface AppState {
   // UI State
-  activeTab: 'wardrobe' | 'trips' | 'packing';
+  activeTab: 'home' | 'wardrobe' | 'trips' | 'packing';
   theme: 'light' | 'dark';
   isLoading: boolean;
   
@@ -17,7 +17,7 @@ interface AppState {
   tripItems: TripItem[];
   
   // Actions
-  setActiveTab: (tab: 'wardrobe' | 'trips' | 'packing') => void;
+  setActiveTab: (tab: 'home' | 'wardrobe' | 'trips' | 'packing') => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setLoading: (loading: boolean) => void;
   setWardrobeItems: (items: WardrobeItem[]) => void;
@@ -35,11 +35,14 @@ interface AppState {
   updateTripItem: (id: string, updates: Partial<TripItem>) => void;
   removeTripItem: (id: string) => void;
   clearTripItems: () => void;
+  addCategory: (category: Category) => void;
+  updateCategory: (id: string, updates: Partial<Category>) => void;
+  removeCategory: (id: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
   // Initial UI State
-  activeTab: 'wardrobe',
+  activeTab: 'home',
   theme: 'light',
   isLoading: false,
   
@@ -108,6 +111,21 @@ export const useStore = create<AppState>((set, get) => ({
     })),
   
   clearTripItems: () => set({ tripItems: [] }),
+  
+  addCategory: (category) =>
+    set((state) => ({ categories: [...state.categories, category] })),
+  
+  updateCategory: (id, updates) =>
+    set((state) => ({
+      categories: state.categories.map((category) =>
+        category.id === id ? { ...category, ...updates } : category
+      ),
+    })),
+  
+  removeCategory: (id) =>
+    set((state) => ({
+      categories: state.categories.filter((category) => category.id !== id),
+    })),
 }));
 
 // Theme hook

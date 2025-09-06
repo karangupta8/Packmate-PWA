@@ -3,8 +3,6 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  sw: '/sw.js',
   runtimeCaching: [
     {
       urlPattern: /^https?.*/,
@@ -17,8 +15,6 @@ const withPWA = require('next-pwa')({
       },
     },
   ],
-  buildExcludes: [/middleware-manifest\.json$/],
-  maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
 });
 
 const nextConfig = withPWA({

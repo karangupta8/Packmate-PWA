@@ -11,6 +11,8 @@ export const Header = () => {
 
   const getTitle = () => {
     switch (activeTab) {
+      case 'home':
+        return 'PackMate';
       case 'wardrobe':
         return 'My Wardrobe';
       case 'trips':
