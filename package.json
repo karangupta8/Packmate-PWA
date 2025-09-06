@@ -47,7 +47,6 @@
     "cmdk": "^1.0.0",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.0.0",
-    "eslint-config-next": "13.5.1",
     "idb": "^8.0.3",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
@@ -73,18 +72,12 @@
     "workbox-strategies": "^7.3.0",
     "workbox-webpack-plugin": "^7.3.0",
     "zod": "^4.0.17",
-    "zustand": "^5.0.8",
-    "@radix-ui/react-breadcrumb": "^1.1.0",
-    "@radix-ui/react-drawer": "^1.1.0",
-    "@radix-ui/react-input-otp": "^1.1.0",
-    "@radix-ui/react-resizable": "^1.1.0",
-    "@radix-ui/react-sheet": "^1.1.0",
-    "@radix-ui/react-skeleton": "^1.1.0",
-    "@radix-ui/react-table": "^1.1.0"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.4",
     "eslint": "^9.35.0",
+    "eslint-config-next": "^15.5.2",
     "rimraf": "^6.0.1"
   }
 }
