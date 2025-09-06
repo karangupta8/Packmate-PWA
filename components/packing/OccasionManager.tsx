@@ -395,7 +395,11 @@ export const OccasionManager = ({
                             </p>
                             {occasionItems.length > 0 && (
                               <p className="text-xs text-muted-foreground mt-1 truncate">
-                                {occasionItems.slice(0, 3).map(({ item }) => item!.name).join(', ')}
+                                {occasionItems
+                                  .slice(0, 3)
+                                  .map((oi) => oi?.item?.name ?? '')
+                                  .filter(Boolean)
+                                  .join(', ')}
                                 {occasionItems.length > 3 ? ` and ${occasionItems.length - 3} more` : ''}
                               </p>
                             )}
