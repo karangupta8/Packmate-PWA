@@ -10,7 +10,7 @@ import {
   Star, 
   Package, 
   ArrowLeft,
-  Sun, Moon, Coffee, Wine, Camera as CameraIcon, Music, Suitcase, CheckCircle, CheckCircle2
+  Sun, Moon, Coffee, Wine, Camera as CameraIcon, Music, CheckCircle, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
