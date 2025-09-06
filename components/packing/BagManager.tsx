@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Luggage, Edit2, Trash2, X, Package, Star } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, Luggage, Edit2, Trash2, X, Package, Star, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +15,6 @@ import { Bag, TripItem, WardrobeItem, bagTypes } from '@/lib/db/schema';
 import { toast } from 'sonner';
 
 interface BagManagerProps {
-  isOpen: boolean;
-  onClose: () => void;
   tripId: string;
   bags: Bag[];
   setBags: (bags: Bag[]) => void;
@@ -32,8 +29,6 @@ const bagColors = [
 ];
 
 export const BagManager = ({ 
-  isOpen, 
-  onClose, 
   tripId, 
   bags, 
   setBags,
@@ -134,16 +129,15 @@ export const BagManager = ({
 
   if (selectedBag) {
     return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setSelectedBag(null)}>
-                <X size={16} />
-              </Button>
-              {selectedBag.name} Contents
-            </DialogTitle>
-          </DialogHeader>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setSelectedBag(null)}>
+            <ArrowLeft size={16} />
+          </Button>
+          <h3 className="text-lg font-semibold">
+            {selectedBag.name} Contents
+          </h3>
+        </div>
 
           <div className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-3">
@@ -224,22 +218,16 @@ export const BagManager = ({
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </div>
     );
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Manage Bags</DialogTitle>
-        </DialogHeader>
-
+    <div className="space-y-4">
         <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as any)}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="assign">Assign Items</TabsTrigger>
+            <TabsTrigger value="assign">Assign Items ({unassignedItems.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -395,7 +383,6 @@ export const BagManager = ({
           <TabsContent value="assign" className="space-y-4">
             <div className="space-y-4">
               <div>
-                <Label>Unassigned Items ({unassignedItems.length})</Label>
                 <div className="max-h-48 overflow-y-auto space-y-2 mt-2">
                   {unassignedItems.map((tripItem) => {
                     const item = tripItem.item!;
@@ -451,7 +438,6 @@ export const BagManager = ({
             </div>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 };

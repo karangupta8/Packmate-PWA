@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils';
 const tripSchema = z.object({
   name: z.string().min(1, 'Trip name is required').max(50, 'Name must be under 50 characters'),
   destination: z.string().max(100, 'Destination must be under 100 characters').optional(),
-  startDate: z.date({ required_error: 'Start date is required' }),
-  endDate: z.date({ required_error: 'End date is required' }),
+  startDate: z.date({ invalid_type_error: 'Start date is required' }),
+  endDate: z.date({ invalid_type_error: 'End date is required' }),
   type: z.enum(['Business', 'Vacation', 'Weekend', 'Other']),
   isTemplate: z.boolean().default(false),
 }).refine((data) => data.endDate >= data.startDate, {

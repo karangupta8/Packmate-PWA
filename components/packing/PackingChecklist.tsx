@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { useStore } from '@/lib/store/useStore';
 import { tripItemService, bagService, occasionService, outfitItemService } from '@/lib/db/services';
 import { TripItem, Bag, Occasion, OutfitItem } from '@/lib/db/schema';
@@ -42,9 +42,7 @@ export function PackingChecklist() {
   const [bags, setBags] = useState<Bag[]>([]);
   const [occasions, setOccasions] = useState<Occasion[]>([]);
   const [outfitItems, setOutfitItems] = useState<OutfitItem[]>([]);
-  const [showBagManager, setShowBagManager] = useState(false);
-  const [showOccasionManager, setShowOccasionManager] = useState(false);
-  const [activeTab, setActiveTab] = useState('items');
+  const [activeTab, setActiveTab] = useState('category');
 
   useEffect(() => {
     if (currentTrip) {
@@ -108,20 +106,6 @@ export function PackingChecklist() {
         acc[categoryName] = [];
       }
       acc[categoryName].push(item);
-      return acc;
-    }, {} as Record<string, typeof tripItemsWithDetails>);
-
-    return grouped;
-  }, [tripItemsWithDetails]);
-
-  // Group items by bag
-  const itemsByBag = useMemo(() => {
-    const grouped = tripItemsWithDetails.reduce((acc, item) => {
-      const bagName = item.bag?.name || 'Unassigned';
-      if (!acc[bagName]) {
-        acc[bagName] = [];
-      }
-      acc[bagName].push(item);
       return acc;
     }, {} as Record<string, typeof tripItemsWithDetails>);
 
@@ -307,41 +291,15 @@ export function PackingChecklist() {
         </CardContent>
       </Card>
 
-      {/* Management Buttons */}
-      <div className="grid grid-cols-2 gap-4">
-        <Button
-          variant="outline"
-          onClick={() => setShowBagManager(true)}
-          className="h-16 flex flex-col items-center gap-2"
-        >
-          <Luggage size={20} />
-          <div className="text-center">
-            <div className="font-medium">Manage Bags</div>
-            <div className="text-xs text-muted-foreground">{bags.length} bags</div>
-          </div>
-        </Button>
-
-        <Button
-          variant="outline"
-          onClick={() => setShowOccasionManager(true)}
-          className="h-16 flex flex-col items-center gap-2"
-        >
-          <Calendar size={20} />
-          <div className="text-center">
-            <div className="font-medium">Occasions</div>
-            <div className="text-xs text-muted-foreground">{occasions.length} occasions</div>
-          </div>
-        </Button>
-      </div>
-
       {/* Items Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="items">By Category</TabsTrigger>
-          <TabsTrigger value="bags">By Bag</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="category">By Category</TabsTrigger>
+          <TabsTrigger value="bags">Bags ({bags.length})</TabsTrigger>
+          <TabsTrigger value="occasions">Occasions ({occasions.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="items" className="space-y-4">
+        <TabsContent value="category" className="space-y-4">
           {Object.entries(itemsByCategory).length > 0 ? (
             Object.entries(itemsByCategory).map(([categoryName, items]) => (
               <Card key={categoryName}>
@@ -375,66 +333,28 @@ export function PackingChecklist() {
         </TabsContent>
 
         <TabsContent value="bags" className="space-y-4">
-          {Object.entries(itemsByBag).length > 0 ? (
-            Object.entries(itemsByBag).map(([bagName, items]) => (
-              <Card key={bagName}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Luggage size={18} />
-                      <span>{bagName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{items.length}</Badge>
-                      <Badge variant="outline">
-                        {items.filter(item => item.packed).length} packed
-                      </Badge>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {items.map(renderItemCard)}
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Luggage size={48} className="mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Items Added</h3>
-                <p className="text-muted-foreground">
-                  Add items to this trip from your wardrobe to start packing.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <BagManager
+            tripId={currentTrip.id}
+            bags={bags}
+            setBags={setBags}
+            tripItems={tripItems}
+            setTripItems={setTripItems}
+            wardrobeItems={wardrobeItems}
+          />
+        </TabsContent>
+
+        <TabsContent value="occasions" className="space-y-4">
+          <OccasionManager
+            tripId={currentTrip.id}
+            occasions={occasions}
+            setOccasions={setOccasions}
+            outfitItems={outfitItems}
+            setOutfitItems={setOutfitItems}
+            wardrobeItems={wardrobeItems}
+            tripItems={tripItems}
+          />
         </TabsContent>
       </Tabs>
-
-      {/* Bag Manager Dialog */}
-      <BagManager
-        isOpen={showBagManager}
-        onClose={() => setShowBagManager(false)}
-        tripId={currentTrip.id}
-        bags={bags}
-        setBags={setBags}
-        tripItems={tripItems}
-        setTripItems={setTripItems}
-        wardrobeItems={wardrobeItems}
-      />
-
-      {/* Occasion Manager Dialog */}
-      <OccasionManager
-        isOpen={showOccasionManager}
-        onClose={() => setShowOccasionManager(false)}
-        tripId={currentTrip.id}
-        occasions={occasions}
-        setOccasions={setOccasions}
-        outfitItems={outfitItems}
-        setOutfitItems={setOutfitItems}
-        wardrobeItems={wardrobeItems}
-        tripItems={tripItems}
-      />
     </div>
   );
 }

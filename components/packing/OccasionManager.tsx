@@ -1,8 +1,17 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Calendar, Edit2, Trash2, X, Star, Package } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { 
+  Plus, 
+  Calendar, 
+  Edit2, 
+  Trash2, 
+  X, 
+  Star, 
+  Package, 
+  ArrowLeft,
+  Sun, Moon, Coffee, Wine, Camera as CameraIcon, Music
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,8 +24,6 @@ import { Occasion, OutfitItem, WardrobeItem, TripItem } from '@/lib/db/schema';
 import { toast } from 'sonner';
 
 interface OccasionManagerProps {
-  isOpen: boolean;
-  onClose: () => void;
   tripId: string;
   occasions: Occasion[];
   setOccasions: (occasions: Occasion[]) => void;
@@ -26,9 +33,17 @@ interface OccasionManagerProps {
   tripItems: TripItem[];
 }
 
-const occasionIcons = [
-  'Calendar', 'Star', 'Sun', 'Moon', 'Coffee', 'Wine', 'Camera', 'Music'
-];
+const occasionIcons: Record<string, React.ElementType> = {
+  Calendar,
+  Star,
+  Sun,
+  Moon,
+  Coffee,
+  Wine,
+  Camera: CameraIcon,
+  Music,
+};
+const occasionIconNames = Object.keys(occasionIcons);
 
 const occasionColors = [
   '#3b82f6', '#ef4444', '#10b981', '#f59e0b', 
@@ -36,8 +51,6 @@ const occasionColors = [
 ];
 
 export const OccasionManager = ({ 
-  isOpen, 
-  onClose, 
   tripId, 
   occasions, 
   setOccasions,
@@ -47,13 +60,12 @@ export const OccasionManager = ({
   tripItems
 }: OccasionManagerProps) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingOccasion, setEditingOccasion] = useState<Occasion | null>(null);
   const [selectedOccasion, setSelectedOccasion] = useState<Occasion | null>(null);
   const [newOccasion, setNewOccasion] = useState({
     name: '',
     description: '',
-    icon: occasionIcons[0],
-    color: occasionColors[0]
+    icon: occasionIconNames[0],
+    color: occasionColors[0],
   });
 
   // Get trip items with wardrobe details
@@ -83,7 +95,7 @@ export const OccasionManager = ({
       });
 
       setOccasions([...occasions, occasion]);
-      setNewOccasion({ name: '', description: '', icon: occasionIcons[0], color: occasionColors[0] });
+      setNewOccasion({ name: '', description: '', icon: occasionIconNames[0], color: occasionColors[0] });
       setShowCreateForm(false);
       toast.success('Occasion created');
     } catch (error) {
@@ -138,16 +150,15 @@ export const OccasionManager = ({
 
   if (selectedOccasion) {
     return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setSelectedOccasion(null)}>
-                <X size={16} />
-              </Button>
-              Plan Outfit: {selectedOccasion.name}
-            </DialogTitle>
-          </DialogHeader>
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setSelectedOccasion(null)}>
+            <ArrowLeft size={16} />
+          </Button>
+          <h3 className="text-lg font-semibold">
+            Plan Outfit: {selectedOccasion.name}
+          </h3>
+        </div>
 
           <div className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-3">
@@ -208,21 +219,14 @@ export const OccasionManager = ({
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </div>
     );
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Manage Occasions</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Create New Occasion */}
-          {showCreateForm ? (
+    <div className="space-y-4">
+      {/* Create New Occasion */}
+      {showCreateForm ? (
             <Card>
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
@@ -270,6 +274,25 @@ export const OccasionManager = ({
                     </div>
                   </div>
 
+                  <div>
+                    <Label>Icon</Label>
+                    <div className="grid grid-cols-4 gap-2 mt-2">
+                      {occasionIconNames.map((iconName) => {
+                        const IconComponent = occasionIcons[iconName];
+                        return (
+                          <Button
+                            key={iconName}
+                            variant={newOccasion.icon === iconName ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => setNewOccasion({ ...newOccasion, icon: iconName })}
+                          >
+                            <IconComponent size={18} />
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="flex gap-2">
                     <Button onClick={handleCreateOccasion} className="flex-1">
                       Create Occasion
@@ -282,14 +305,14 @@ export const OccasionManager = ({
               </CardContent>
             </Card>
           ) : (
-            <Button onClick={() => setShowCreateForm(true)} className="w-full">
+        <Button onClick={() => setShowCreateForm(true)} className="w-full">
               <Plus size={16} className="mr-2" />
               Add New Occasion
             </Button>
           )}
 
-          {/* Existing Occasions */}
-          <div className="space-y-2">
+      {/* Existing Occasions */}
+      <div className="space-y-2">
             {occasions.map((occasion) => {
               const outfitItemCount = outfitItems.filter(oi => oi.occasionId === occasion.id).length;
               
@@ -344,9 +367,7 @@ export const OccasionManager = ({
                 <p className="text-muted-foreground">No occasions created yet</p>
               </div>
             )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
