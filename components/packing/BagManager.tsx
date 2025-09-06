@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Luggage, Edit2, Trash2, X, Package, Star, ArrowLeft } from 'lucide-react';
+import { Plus, Luggage, Edit2, Trash2, X, Package, Star, ArrowLeft, Suitcase, Camera, CheckCircle, Briefcase, TrendingUp, Calendar, MapPin, ArrowRight, Zap, ChevronDown, ChevronUp, Lightbulb, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

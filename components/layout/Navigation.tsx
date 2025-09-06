@@ -29,7 +29,7 @@ export const Navigation = () => {
                 : 'text-muted-foreground hover:text-foreground hover:bg-accent'
             )}
           >
-            <Icon size={18} />
+            <Icon className="w-5 h-5" />
             <span className="text-xs mt-1 font-medium">{label}</span>
           </button>
         ))}
@@ -38,9 +38,9 @@ export const Navigation = () => {
           variant="ghost"
           size="icon"
           onClick={toggleTheme}
-          className="min-h-[44px] min-w-[40px]"
+          className="min-h-[44px] min-w-[40px] flex items-center justify-center"
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
         </Button>
       </div>
     </div>

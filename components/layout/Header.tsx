@@ -69,11 +69,11 @@ export const Header = () => {
         <h1 className="text-xl font-bold text-foreground">{getTitle()}</h1>
         
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={handleExport}>
-            <Download size={18} />
+          <Button variant="ghost" size="icon" onClick={handleExport} className="flex items-center justify-center">
+            <Download className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleImport}>
-            <Upload size={18} />
+          <Button variant="ghost" size="icon" onClick={handleImport} className="flex items-center justify-center">
+            <Upload className="w-5 h-5" />
           </Button>
         </div>
       </div>

@@ -270,13 +270,13 @@ export const WardrobeGrid = () => {
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="h-8 w-8 bg-white/90 hover:bg-white"
+                        className="h-9 w-9 bg-white/90 hover:bg-white flex items-center justify-center"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleAddSingleItemToTrip(item);
                         }}
                       >
-                        <Suitcase size={14} />
+                        <Suitcase className="w-4 h-4" />
                       </Button>
                     </div>
                   )}

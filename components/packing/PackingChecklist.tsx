@@ -281,7 +281,7 @@ export function PackingChecklist() {
                 />
               ) : (
                 <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                  <Package size={24} className="text-muted-foreground" />
+                  <Package className="w-8 h-8 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -293,10 +293,10 @@ export function PackingChecklist() {
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-medium truncate">{item.wardrobeItem?.name}</h4>
                     {item.essential && (
-                      <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
                     )}
                     {item.packed && (
-                      <CheckCircle2 size={14} className="text-green-600" />
+                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
                     )}
                   </div>
                   
