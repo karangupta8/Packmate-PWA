@@ -116,9 +116,10 @@ export const BagManager = ({
 
   const handleAssignItemToBag = async (tripItemId: string, bagId: string | null) => {
     try {
-      await tripItemService.update(tripItemId, { bagId });
+      const bagIdToSet = bagId === null ? undefined : bagId;
+      await tripItemService.update(tripItemId, { bagId: bagIdToSet });
       setTripItems(tripItems.map(item => 
-        item.id === tripItemId ? { ...item, bagId } : item
+        item.id === tripItemId ? { ...item, bagId: bagIdToSet } : item
       ));
       toast.success(bagId ? 'Item assigned to bag' : 'Item unassigned from bag');
     } catch (error) {
