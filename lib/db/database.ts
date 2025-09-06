@@ -5,7 +5,7 @@ let dbPromise: Promise<IDBPDatabase<PackMateDB>>;
 
 export const getDB = () => {
   if (!dbPromise) {
-    dbPromise = openDB<PackMateDB>('PackMateDB', 2, {
+    dbPromise = openDB<PackMateDB>('PackMateDB', 3, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           // Items store
@@ -52,6 +52,11 @@ export const getDB = () => {
           // Packing categories store
           const packingCategoriesStore = db.createObjectStore('packingCategories', { keyPath: 'id' });
           packingCategoriesStore.createIndex('by-trip', 'tripId');
+        }
+
+        if (oldVersion < 3) {
+          // Add any schema changes for version 3 here.
+          // For example: db.createObjectStore('newStore', { keyPath: 'id' });
         }
       },
     });
