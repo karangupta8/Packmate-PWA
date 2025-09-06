@@ -54,8 +54,8 @@ export const wardrobeService = {
         item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()));
       
       const matchesCategory = !category || item.category === category;
-      const matchesEssential = essential === undefined || item.essential === essential;
       
+      const matchesEssential = essential === undefined || item.essential === (essential ? 1 : 0);
       return matchesQuery && matchesCategory && matchesEssential;
     });
   },

@@ -109,8 +109,8 @@ export const EditWardrobeItemDialog = ({ item, isOpen, onClose, onSave }: EditWa
           <div className="flex items-center space-x-2">
             <Checkbox
               id="edit-item-essential"
-              checked={formData.essential}
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, essential: !!checked }))}
+              checked={!!formData.essential}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, essential: checked ? 1 : 0 }))}
             />
             <Label htmlFor="edit-item-essential">Essential Item</Label>
           </div>

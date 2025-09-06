@@ -6,7 +6,7 @@ export interface PackMateDB extends DBSchema {
     value: WardrobeItem;
     indexes: {
       'by-category': string;
-      'by-essential': boolean;
+      'by-essential': number;
       'by-created': Date;
     };
   };
@@ -69,7 +69,7 @@ export interface WardrobeItem {
   name: string;
   category: string;
   tags: string[];
-  essential: boolean;
+  essential: 0 | 1;
   image?: string; // Base64 compressed image
   notes?: string;
   createdAt: Date;
@@ -96,7 +96,7 @@ export interface TripItem {
   tripId: string;
   itemId: string;
   packed: boolean;
-  essential: boolean;
+  essential: 0 | 1;
   categoryId?: string;
   bagId?: string;
   addedAt: Date;

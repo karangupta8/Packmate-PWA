@@ -100,7 +100,7 @@ export const AddItemForm = ({ onClose }: AddItemFormProps) => {
           name: data.name,
           category: data.category,
           tags: tags,
-          essential: data.essential,
+          essential: data.essential ? 1 : 0,
         },
         imageFile || undefined
       );
